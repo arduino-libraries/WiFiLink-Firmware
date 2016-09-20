@@ -1,6 +1,6 @@
 //Communication Interface
 #include "CommItf.h"
-
+#include "utility/wifi_utils.h"
 /*
 	TODO: select the correct driver, depends on the target MCU. supported drivers are:
 	SPI: SPI Driver
@@ -23,7 +23,7 @@ CommItf::CommItf()
 
 	//TEST
 	 McuType = AVR328P;
-	
+
 	 switch(int(McuType)){
 	 	case AVR328P:
 	 		CommChannel = CH_SERIAL;
@@ -56,23 +56,40 @@ bool CommItf::begin()
    return false;
 }
 
-String CommItf::read()
+void CommItf::read(tMsgPacket *_pckt)
 {
 	 if(CommChannel == CH_SERIAL){
-	 	return Serial.readStringUntil(END_CMD);
+		return createPacketFromSerial(_pckt);
 	 }
 	 else if(CommChannel == CH_SPI){
-	 	// while(message == "");
-	 	// String message2 = message; //TODO: message will retrieved from SPI Slave callback
-	 	// message = "";								//TODO: check these handy variable
-	 	// return message2;
+		 return createPacketFromSPI(_pckt);
 	 }
 }
 
-void CommItf::write(String message)
+
+void CommItf::createPacketFromSerial(tMsgPacket *_pckt){
+	//TODO read message packet from serial
+	//String raw_pckt = Serial.readStringUntil(END_CMD);
+
+	//TEST
+	//_pckt->test = "test-data";
+
+
+	//TODO parse the message and create the packet
+}
+
+void CommItf::createPacketFromSPI(tMsgPacket *_pckt){
+	//TEST
+	//_pckt->test = "test-data";
+
+	//TODO parse the message and create the packet
+}
+
+
+void CommItf::write(tMsgPacket *_packet)
 {
    if(CommChannel == CH_SERIAL){
-	 	Serial.print(message + String(END_CMD));
+	 	//Serial.print(packet + String(END_CMD));
 	 }
 	 else if(CommChannel == CH_SPI){
 	 	//TODO

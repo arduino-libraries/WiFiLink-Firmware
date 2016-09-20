@@ -1,5 +1,6 @@
 #include "CommItf.h"
 #include "Arduino.h"
+#include "utility/wifi_utils.h"
 
 #ifndef H_COMM_LGC_H
 #define H_COMM_LGC_H
@@ -11,7 +12,7 @@ public:
   void begin();
 	void handle();
 private:
-	String process(String);
+	void process(tMsgPacket *_pckt);
   String getCurrentSSID(String);
 };
 

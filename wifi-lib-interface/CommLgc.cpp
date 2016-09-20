@@ -2,6 +2,7 @@
 #include "CommLgc.h"
 #include "CommCmd.h"
 #include <ESP8266WiFi.h>
+#include "utility/wifi_utils.h"
 
 String recCmd = "";
 
@@ -17,21 +18,27 @@ void CommLgc::begin()
 
 void CommLgc::handle()
 {
-	recCmd = CommunicationInterface.read();
-	if(recCmd != "" ){
-		String resp = process(recCmd);
-		CommunicationInterface.write(resp);
-	}
+
+	tMsgPacket reqPckt;
+	tMsgPacket *refPckt = &reqPckt;
+	CommunicationInterface.read(refPckt);
+	Serial.println(reqPckt.cmd);
+
+	// if(reqPckt.cmd != NULL ){
+	// 	tMsgPacket resPckt = process(reqPckt);
+	// 	CommunicationInterface.write(resPckt);
+	// }
 }
 
-String CommLgc::process(String cmd){
+void CommLgc::process(tMsgPacket *pckt){
 	//TODO
-  if(cmd==String(SCAN_NETWORKS,HEX))
-	  return String(WiFi.scanNetworks());
-  else if(cmd == String(GET_CURR_SSID_CMD,HEX))
-   return String(WiFi.SSID());
-	else
-	  return "received: " + cmd;
+  // if(pckt.cmd ==String(SCAN_NETWORKS,HEX))
+	//   return String(WiFi.scanNetworks());
+  // else if(pckt.cmd == String(GET_CURR_SSID_CMD,HEX))
+  //  return String(WiFi.SSID());
+	// else
+	//   return "received: " + pckt.cmd;
+
 }
 
 String getCurrentSSID(String cmd){
@@ -43,7 +50,7 @@ String getCurrentSSID(String cmd){
   //crea la risposta
 
   //ritorna la risposta
-  
+
 }
 
 CommLgc CommunicationLogic;

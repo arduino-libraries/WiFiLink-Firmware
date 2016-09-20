@@ -1,5 +1,6 @@
 //#include "SPISlave.h"
 #include "Arduino.h"
+#include "utility/wifi_utils.h"
 
 #ifndef H_COMM_ITF_H
 #define H_COMM_ITF_H
@@ -21,10 +22,12 @@ class CommItf {
 public:
 	CommItf();
 	bool begin();
-	String read();
-	void write(String); //or int
+	void read(tMsgPacket *_pck);
+	void write(tMsgPacket *_pck);
 	void end();
-
+private:
+	void createPacketFromSerial(tMsgPacket *_pck);
+	void createPacketFromSPI(tMsgPacket *_pck);
 };
 
 extern CommItf CommunicationInterface;
