@@ -119,7 +119,8 @@ enum numParams{
 typedef struct  __attribute__((__packed__))
 {
 	uint8_t	paramLen;
-	char*		param;
+	//char*	param;
+	String	param;
 }	tParam;
 
 typedef struct  __attribute__((__packed__))
@@ -130,6 +131,7 @@ typedef struct  __attribute__((__packed__))
 
 typedef struct  __attribute__((__packed__))
 {
+	String test;
 	unsigned char	cmd;
 	unsigned char	tcmd;
 	unsigned char	nParam;

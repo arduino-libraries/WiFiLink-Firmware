@@ -59,10 +59,10 @@ bool CommItf::begin()
 void CommItf::read(tMsgPacket *_pckt)
 {
 	 if(CommChannel == CH_SERIAL){
-		return createPacketFromSerial(_pckt);
+		createPacketFromSerial(_pckt);
 	 }
 	 else if(CommChannel == CH_SPI){
-		 return createPacketFromSPI(_pckt);
+		 createPacketFromSPI(_pckt);
 	 }
 }
 
@@ -72,15 +72,15 @@ void CommItf::createPacketFromSerial(tMsgPacket *_pckt){
 	//String raw_pckt = Serial.readStringUntil(END_CMD);
 
 	//TEST
-	//_pckt->test = "test-data";
-
+	_pckt->cmd = START_CMD;
+	_pckt->tcmd = 0x23;
 
 	//TODO parse the message and create the packet
 }
 
 void CommItf::createPacketFromSPI(tMsgPacket *_pckt){
 	//TEST
-	//_pckt->test = "test-data";
+	//_pckt->cmd = 0x23;
 
 	//TODO parse the message and create the packet
 }
@@ -88,12 +88,12 @@ void CommItf::createPacketFromSPI(tMsgPacket *_pckt){
 
 void CommItf::write(tMsgPacket *_packet)
 {
-   if(CommChannel == CH_SERIAL){
-	 	//Serial.print(packet + String(END_CMD));
-	 }
-	 else if(CommChannel == CH_SPI){
-	 	//TODO
-	 }
+	if(CommChannel == CH_SERIAL){
+		//Serial.print(packet + String(END_CMD));
+	}
+	else if(CommChannel == CH_SPI){
+		//TODO
+	}
 }
 
 void CommItf::end()

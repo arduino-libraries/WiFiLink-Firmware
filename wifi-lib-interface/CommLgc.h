@@ -12,8 +12,9 @@ public:
   void begin();
 	void handle();
 private:
-	void process(tMsgPacket *_pckt);
-  String getCurrentSSID(String);
+	void process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+  void getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void DEBUG(tMsgPacket *_pckt);
 };
 
 extern CommLgc CommunicationLogic;
