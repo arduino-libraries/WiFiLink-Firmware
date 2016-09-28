@@ -111,10 +111,12 @@ int CommItf::createPacketFromSerial(tMsgPacket *_pckt){
 			tmp = raw_pckt[++idx];
 			_pckt->params[a].paramLen = tmp;
 			//Serial.write(_pckt->params[a].paramLen);
+			_pckt->params[a].param = (char*)malloc(_pckt->params[a].paramLen);
 			//Value of the parameter
 			for(int b=0; b<(int)_pckt->params[a].paramLen; b++){
 				tmp = raw_pckt[++idx];
-				_pckt->params[a].param += (char)tmp;
+				//_pckt->params[a].param += (char)tmp; // _pckt->params[a].param type of String
+				_pckt->params[a].param[b] = (char)tmp;	// _pckt->params[a].param type of char* []
 				//Serial.write(_pckt->params[a].param[b]);
 			}
 		}

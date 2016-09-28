@@ -60,16 +60,17 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 		switch(_reqPckt->tcmd){
 
-			case SET_PASSPHRASE_CMD:				break;
+			case SET_NET_CMD:					begin(_reqPckt, _resPckt, 0);				break;
+			case SET_PASSPHRASE_CMD:	begin(_reqPckt, _resPckt, 1);				break;
 			case SET_IP_CONFIG_CMD:					break;
 			case SET_DNS_CONFIG_CMD:				break;
-			case GET_CONN_STATUS_CMD:				break;
+			case GET_CONN_STATUS_CMD:	getStatus(_reqPckt, _resPckt);			break;
 			case GET_IPADDR_CMD:						break;
-			case GET_MACADDR_CMD:		getMacAddress(_reqPckt, _resPckt);	break;
-			case GET_CURR_SSID_CMD: getCurrentSSID(_reqPckt, _resPckt);	break;
+			case GET_MACADDR_CMD:		getMacAddress(_reqPckt, _resPckt);		break;
+			case GET_CURR_SSID_CMD: getCurrentSSID(_reqPckt, _resPckt);		break;
 			case GET_CURR_BSSID_CMD:				break;
-			case GET_CURR_RSSI_CMD: getRSSI(_reqPckt, _resPckt, 1);	break;
-			case GET_CURR_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 1);				break;
+			case GET_CURR_RSSI_CMD: getRSSI(_reqPckt, _resPckt, 1);				break;
+			case GET_CURR_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 1);	break;
 			case SCAN_NETWORKS:							break;
 			case START_SERVER_TCP_CMD:			break;
 			case GET_STATE_TCP_CMD:					break;
@@ -79,9 +80,9 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case START_CLIENT_TCP_CMD:			break;
 			case STOP_CLIENT_TCP_CMD:				break;
 			case GET_CLIENT_STATE_TCP_CMD:	break;
-			case DISCONNECT_CMD:				break;
-			case GET_IDX_RSSI_CMD: getRSSI(_reqPckt, _resPckt, 0);	break;
-			case GET_IDX_ENCT_CMD: getEncryption(_reqPckt, _resPckt, 0);	break;
+			case DISCONNECT_CMD:		disconnect(_reqPckt, _resPckt);				break;
+			case GET_IDX_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 0);				break;
+			case GET_IDX_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 0);	break;
 			case GET_HOST_BY_NAME_CMD:	break;
 			case START_SCAN_NETWORKS:		break;
 			case SEND_DATA_UDP_CMD:			break;
@@ -96,10 +97,9 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current){
 	//TODO: To be tested
-	int32_t result;// = -68;
+	int32_t result;
 
 	//retrieve RSSI
-
 	if(current == 1){
 		result = WiFi.RSSI();
 	}
@@ -107,7 +107,7 @@ void CommLgc::getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t curren
 		uint8_t idx = String((_reqPckt->params[0].param[0])).toInt();
 
 		// NOTE: only for test this function
-		// User must call scan network before
+		// user must call scan network before
 		//int num = WiFi.scanNetworks();
 		result = WiFi.RSSI(idx);
 	}
@@ -115,11 +115,14 @@ void CommLgc::getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t curren
 	//Response contains 1 param with length 4
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 4;
-	_resPckt->params[0].param = (char)result;
-	_resPckt->params[0].param += (char)0xFF;
-	_resPckt->params[0].param += (char)0xFF;
-	_resPckt->params[0].param += (char)0xFF;
-
+	_resPckt->params[0].param[0] = result;	//char*
+	_resPckt->params[0].param[1] = 0xFF;
+	_resPckt->params[0].param[2] = 0xFF;
+	_resPckt->params[0].param[3] = 0xFF;
+	// _resPckt->params[0].param = (char)result; //String
+	// _resPckt->params[0].param += (char)0xFF;
+	// _resPckt->params[0].param += (char)0xFF;
+	// _resPckt->params[0].param += (char)0xFF;
 }
 
 void CommLgc::getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -130,7 +133,10 @@ void CommLgc::getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = result.length();
-	_resPckt->params[0].param = result;
+	for(int i=0; i< result.length(); i++){ //char *
+		_resPckt->params[0].param[i] = result[i];
+	}
+	//_resPckt->params[0].param = result;//String
 
 }
 
@@ -156,7 +162,8 @@ void CommLgc::getEncryption(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t 
 	result = WiFi.encryptionType(idx);
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
-	_resPckt->params[0].param = (char)result;
+	_resPckt->params[0].param[0] = result;	//char* []
+	//_resPckt->params[0].param = (char)result; //String
 }
 
 void CommLgc::getMacAddress(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -171,8 +178,77 @@ void CommLgc::getMacAddress(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = paramLen;
 	for(int i=0; i<paramLen; i++){
-		_resPckt->params[0].param += (char)mac[i];
+		//_resPckt->params[0].param += (char)mac[i]; //String
+		_resPckt->params[0].param[i] = mac[i];	//char* []
 	}
+}
+
+void CommLgc::disconnect(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	bool result;
+
+	//Disconnet from the network
+	result = WiFi.disconnect();
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	//_resPckt->params[0].param = (uint8_t)result; //String
+	_resPckt->params[0].param[0] = result; //char *
+
+	/*--- Packet  ---
+	E0
+	B0
+	1
+	1
+	31
+	EE
+	--- End Packet ---*/
+
+}
+
+void CommLgc::getStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	uint8_t result;
+
+	//Disconnet from the network
+	result = WiFi.status();
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	//_resPckt->params[0].param = (uint8_t)result;
+	_resPckt->params[0].param[0] = result;
+}
+
+void CommLgc::begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t idx){
+	//TODO: To be tested
+	uint8_t result;
+
+	if(idx == 0){ // idx==0 - SET_NET_CMD
+			//retrieve parameters
+			//uint8_t ssid_size = _reqPckt->params[0].paramLen
+			char* ssid = _reqPckt->params[0].param;
+
+			//set network and retrieve result
+			result = WiFi.begin(ssid);
+		}
+	else{ // idx ==1 - SET_PASSPHRASE_CMD
+			//retrieve parameters
+			char* ssid = _reqPckt->params[0].param;
+			char* pass = _reqPckt->params[1].param;
+
+			//Serial1.println(ssid);
+			//Serial1.println(pass);
+			
+			//set network and retrieve result
+			result = WiFi.begin(ssid, pass);
+	}
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+
+	_resPckt->params[0].param = (char*) malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
+
 }
 
 CommLgc CommunicationLogic;

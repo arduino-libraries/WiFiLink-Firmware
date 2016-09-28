@@ -17,7 +17,9 @@ private:
 	void getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void getEncryption(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void getMacAddress(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
-
+	void disconnect(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void getStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void DEBUG(tMsgPacket *_pckt);
 
 };

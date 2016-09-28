@@ -47,7 +47,7 @@
 
 //
 // enum {
-// 	SET_NET_CMD 		= 0x10,
+// 			SET_NET_CMD 		= 0x10,
 // 			SET_PASSPHRASE_CMD	= 0x11,
 // 	SET_KEY_CMD	        = 0x12,
 // 	TEST_CMD	        = 0x13,
@@ -119,8 +119,8 @@ enum numParams{
 typedef struct  __attribute__((__packed__))
 {
 	uint8_t	paramLen;
-	//char*	param;
-	String	param;
+	char*	param;
+	//String	param;
 }	tParam;
 
 typedef struct  __attribute__((__packed__))
