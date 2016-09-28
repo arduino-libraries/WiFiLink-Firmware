@@ -15,7 +15,7 @@ void setup() {
     delay(5000);
     ESP.restart();
   }
-
+	delay(8000);
   ArduinoOTA.begin();
   //delay(300);
   //CommunicationInterface.begin();
@@ -29,7 +29,7 @@ void loop() {
 //  Serial.println(WiFi.SSID());
   //Serial.println("Prova");
   CommunicationLogic.handle();
-	delay(1000);
+	
   //String a = CommunicationInterface.read();
   //if(a!="")
    // CommunicationInterface.write("prova");

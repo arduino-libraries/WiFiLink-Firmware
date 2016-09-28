@@ -22,12 +22,15 @@ class CommItf {
 public:
 	CommItf();
 	bool begin();
-	void read(tMsgPacket *_pck);
+	int read(tMsgPacket *_pck);
 	void write(tMsgPacket *_pck);
 	void end();
+
 private:
-	void createPacketFromSerial(tMsgPacket *_pck);
-	void createPacketFromSPI(tMsgPacket *_pck);
+	int createPacketFromSerial(tMsgPacket *_pck);
+	int createPacketFromSPI(tMsgPacket *_pck);
+	String readStringUntil(char);
+	int timedRead();
 };
 
 extern CommItf CommunicationInterface;
