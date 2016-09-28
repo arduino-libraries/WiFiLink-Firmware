@@ -6,7 +6,9 @@ enum{
   ECRY_idx,
   MAC_ADDR,
   DISCONNECT,
-  STATUS
+  STATUS,
+  BEGIN_SSID,
+  BEGIN_SSID_PASS
 };
 
 unsigned long _startMillis;
@@ -102,9 +104,52 @@ void command(int cmd){
        Serial1.write(0xFF);
        Serial1.write(0xEE);
        break;       
-       }
+     case 8: //begin with ssid
+       Serial1.write(0xE0);
+       Serial1.write(0x10);
+       Serial1.write(1);
+       Serial1.write(6);
+         Serial1.write(0x44); 
+         Serial1.write(0x48); 
+         Serial1.write(0x4C); 
+         Serial1.write(0x61); 
+         Serial1.write(0x62); 
+         Serial1.write(0x73);
+       Serial1.write(0xEE);
+       break;  
+     case 9: //begin with ssid and password
+       Serial1.write(0xE0);
+       Serial1.write(0x11);
+       Serial1.write(2);
+       Serial1.write(6);
+         Serial1.write(0x44); 
+         Serial1.write(0x48); 
+         Serial1.write(0x4C); 
+         Serial1.write(0x61); 
+         Serial1.write(0x62); 
+         Serial1.write(0x73);
+       Serial1.write(0x0C);
+         Serial1.write(0x64); 
+         Serial1.write(0x68); 
+         Serial1.write(0x6C); 
+         Serial1.write(0x61); 
+         Serial1.write(0x62); 
+         Serial1.write(0x73);
+         Serial1.write(0x72); 
+         Serial1.write(0x66); 
+         Serial1.write(0x69); 
+         Serial1.write(0x64); 
+         Serial1.write(0x30); 
+         Serial1.write(0x31);
+  
+       Serial1.write(0xEE);
+
+       break;       
+     }
 
   }
+
+
 void setup() {
   // put your setup code here, to run once:
   Serial1.begin(9600);
@@ -112,18 +157,23 @@ void setup() {
 
 }
 
+bool a = true;
 void loop() {
-       
+       String prova;
        //command(ECRY_idx);
        //command(ECRY);
        //command(RSSI);
-       //command(SSID);
+ 
+       //  command(SSID);
        //command(RSSI_idx);
        //command(MAC_ADDR);
        //command(DISCONNECT);
        //command(STATUS);
-       
-       String prova = readStringUntil(0xEE);
+       //command(BEGIN_SSID);
+       //command(BEGIN_SSID_PASS);
+       command(BEGIN_SSID_PASS);
+             
+       prova = readStringUntil(0xEE);
        Serial.print("cmd: ");
        for(int x=0;x<prova.length();x++){
           Serial.print((uint8_t)prova[x],HEX);
@@ -131,7 +181,7 @@ void loop() {
        //uint8_t status = (prova[prova.length()-1]);
        //Serial.print(status);
        Serial.println();
-
+      
 
        delay(5000); 
 
