@@ -7,10 +7,13 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 
+char ssid[] = "yourSSID";     //  your network SSID (name)
+char pass[] = "yourPassword";
+
 void setup() {
 
   WiFi.mode(WIFI_STA);
-  WiFi.begin("DHLabs", "dhlabsrfid01");
+  WiFi.begin(ssid, pass);
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     delay(5000);
     ESP.restart();
