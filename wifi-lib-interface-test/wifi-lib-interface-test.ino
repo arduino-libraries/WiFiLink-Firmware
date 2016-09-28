@@ -5,6 +5,8 @@ enum{
   ECRY,
   ECRY_idx,
   MAC_ADDR,
+  DISCONNECT,
+  STATUS
 };
 
 unsigned long _startMillis;
@@ -85,6 +87,21 @@ void command(int cmd){
        Serial1.write(0xFF);
        Serial1.write(0xEE);
        break;
+     case 6:   //get MacAddress
+       Serial1.write(0xE0);
+       Serial1.write(0x30);
+       Serial1.write(1);
+       Serial1.write(1);
+       Serial1.write(0xFF);
+       Serial1.write(0xEE);
+       break;
+     case 7:   //get Status
+       Serial1.write(0xE0);
+       Serial1.write(0x20);
+       Serial1.write(0);
+       Serial1.write(0xFF);
+       Serial1.write(0xEE);
+       break;       
        }
 
   }
@@ -103,11 +120,16 @@ void loop() {
        //command(SSID);
        //command(RSSI_idx);
        //command(MAC_ADDR);
-      
+       //command(DISCONNECT);
+       //command(STATUS);
+       
        String prova = readStringUntil(0xEE);
        Serial.print("cmd: ");
-       for(int x=0;x<prova.length();x++)
+       for(int x=0;x<prova.length();x++){
           Serial.print((uint8_t)prova[x],HEX);
+       }
+       //uint8_t status = (prova[prova.length()-1]);
+       //Serial.print(status);
        Serial.println();
 
 
