@@ -12,6 +12,7 @@ public:
   void begin();
 	void handle();
 private:
+	void createErrorResponse(tMsgPacket *_pckt);
 	void process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
   void getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
@@ -20,6 +21,9 @@ private:
 	void disconnect(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
+	void startScanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void scanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+
 	void DEBUG(tMsgPacket *_pckt);
 
 };

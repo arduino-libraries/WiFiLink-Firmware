@@ -32,6 +32,8 @@ void CommLgc::handle()
 
 		DEBUG(resPckt);
 		CommunicationInterface.write(resPckt);
+
+		//TODO: free memory
 	}
 }
 
@@ -69,10 +71,10 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_MACADDR_CMD:		getMacAddress(_reqPckt, _resPckt);		break;
 			case GET_CURR_SSID_CMD: getCurrentSSID(_reqPckt, _resPckt);		break;
 			case GET_CURR_BSSID_CMD:				break;
-			case GET_CURR_RSSI_CMD: getRSSI(_reqPckt, _resPckt, 1);				break;
+			case GET_CURR_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 1);				break;
 			case GET_CURR_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 1);	break;
-			case SCAN_NETWORKS:							break;
-			case START_SERVER_TCP_CMD:			break;
+			case SCAN_NETWORKS:			scanNetwork(_reqPckt, _resPckt);			break;
+			case START_SERVER_TCP_CMD:	startScanNetwork(_reqPckt, _resPckt);	break;
 			case GET_STATE_TCP_CMD:					break;
 			case DATA_SENT_TCP_CMD:					break;
 			case AVAIL_DATA_TCP_CMD:				break;
@@ -90,9 +92,16 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case SEND_DATA_TCP_CMD:			break;
 			case GET_DATABUF_TCP_CMD:		break;
 			case INSERT_DATABUF_CMD:		break;
-			default:										break;
+			default:	createErrorResponse(_resPckt); break;
 		}
 	}
+}
+
+void CommLgc::createErrorResponse(tMsgPacket *_pckt){
+
+	_pckt->cmd = ERR_CMD;
+	_pckt->nParam = 0;
+
 }
 
 void CommLgc::getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current){
@@ -115,14 +124,13 @@ void CommLgc::getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t curren
 	//Response contains 1 param with length 4
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 4;
-	_resPckt->params[0].param[0] = result;	//char*
+
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
 	_resPckt->params[0].param[1] = 0xFF;
 	_resPckt->params[0].param[2] = 0xFF;
 	_resPckt->params[0].param[3] = 0xFF;
-	// _resPckt->params[0].param = (char)result; //String
-	// _resPckt->params[0].param += (char)0xFF;
-	// _resPckt->params[0].param += (char)0xFF;
-	// _resPckt->params[0].param += (char)0xFF;
+
 }
 
 void CommLgc::getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -133,6 +141,8 @@ void CommLgc::getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = result.length();
+
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	for(int i=0; i< result.length(); i++){ //char *
 		_resPckt->params[0].param[i] = result[i];
 	}
@@ -162,6 +172,8 @@ void CommLgc::getEncryption(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t 
 	result = WiFi.encryptionType(idx);
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
+
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;	//char* []
 	//_resPckt->params[0].param = (char)result; //String
 }
@@ -177,6 +189,8 @@ void CommLgc::getMacAddress(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = paramLen;
+
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	for(int i=0; i<paramLen; i++){
 		//_resPckt->params[0].param += (char)mac[i]; //String
 		_resPckt->params[0].param[i] = mac[i];	//char* []
@@ -192,17 +206,10 @@ void CommLgc::disconnect(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
-	//_resPckt->params[0].param = (uint8_t)result; //String
-	_resPckt->params[0].param[0] = result; //char *
 
-	/*--- Packet  ---
-	E0
-	B0
-	1
-	1
-	31
-	EE
-	--- End Packet ---*/
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result; //char *
+	//_resPckt->params[0].param = (uint8_t)result; //String
 
 }
 
@@ -215,8 +222,10 @@ void CommLgc::getStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
-	//_resPckt->params[0].param = (uint8_t)result;
+
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
+		//_resPckt->params[0].param = (uint8_t)result;
 }
 
 void CommLgc::begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t idx){
@@ -238,7 +247,7 @@ void CommLgc::begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t idx){
 
 			//Serial1.println(ssid);
 			//Serial1.println(pass);
-			
+
 			//set network and retrieve result
 			result = WiFi.begin(ssid, pass);
 	}
@@ -250,5 +259,37 @@ void CommLgc::begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t idx){
 	_resPckt->params[0].param[0] = result;
 
 }
+
+void CommLgc::startScanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	// Fake response
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = 1;
+
+}
+
+void CommLgc::scanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	uint8_t numNets = WiFi.scanNetworks();
+
+	_resPckt->nParam = numNets;
+
+	for (int i=0; (i<numNets) && (i< MAX_PARAMS); i++)
+	{
+		//Serial.printf("%d: %s, Ch:%d (%ddBm) %s\n", i + 1, WiFi.SSID(i).c_str(), WiFi.channel(i), WiFi.RSSI(i), WiFi.encryptionType(i) == ENC_TYPE_NONE ? "open" : "");
+		String ssidNet = WiFi.SSID(i).c_str();
+		_resPckt->params[i].paramLen = ssidNet.length() /* + 1*/;
+		_resPckt->params[i].param = (char*)malloc( ssidNet.length() /* + 1 */);
+		for(int j=0; j<ssidNet.length(); j++){
+			_resPckt->params[i].param[j] = ssidNet[i];
+		}
+		//_resPckt->params[i].param[ssidNet.length()] = 0;
+	}
+}
+
 
 CommLgc CommunicationLogic;

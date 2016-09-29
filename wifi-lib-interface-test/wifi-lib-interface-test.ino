@@ -8,7 +8,9 @@ enum{
   DISCONNECT,
   STATUS,
   BEGIN_SSID,
-  BEGIN_SSID_PASS
+  BEGIN_SSID_PASS,
+  START_SCAN_NET,
+  SCAN_NET
 };
 
 unsigned long _startMillis;
@@ -141,10 +143,20 @@ void command(int cmd){
          Serial1.write(0x64); 
          Serial1.write(0x30); 
          Serial1.write(0x31);
-  
        Serial1.write(0xEE);
-
-       break;       
+       break;
+      case 10: //START SCAN NET
+         Serial1.write(0xE0);
+         Serial1.write(0x36);
+         Serial1.write(0);
+         Serial1.write(0xEE);
+        break;
+      case 11: //SCAN NET
+         Serial1.write(0xE0);
+         Serial1.write(0x27);
+         Serial1.write(0);
+         Serial1.write(0xEE);
+        break;
      }
 
   }
@@ -171,8 +183,10 @@ void loop() {
        //command(STATUS);
        //command(BEGIN_SSID);
        //command(BEGIN_SSID_PASS);
-       command(BEGIN_SSID_PASS);
-             
+       //command(BEGIN_SSID_PASS);
+       command(START_SCAN_NET);
+       //command(SCAN_NET);
+       
        prova = readStringUntil(0xEE);
        Serial.print("cmd: ");
        for(int x=0;x<prova.length();x++){
