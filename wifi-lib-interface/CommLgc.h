@@ -13,8 +13,9 @@ public:
 	void handle();
 private:
 	void createErrorResponse(tMsgPacket *_pckt);
+	void freeMem(tMsgPacket *_pckt);
 	void process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
-  void getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void getEncryption(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void getMacAddress(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);

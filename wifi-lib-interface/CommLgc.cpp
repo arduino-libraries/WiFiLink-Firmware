@@ -32,9 +32,16 @@ void CommLgc::handle()
 
 		DEBUG(resPckt);
 		CommunicationInterface.write(resPckt);
-
+		freeMem(reqPckt);
+		freeMem(resPckt);
 		//TODO: free memory
 	}
+}
+
+void CommLgc::freeMem(tMsgPacket *_pckt){
+
+	for(int i=0; i<_pckt->nParam; i++)
+		free(_pckt->params[i].param);
 }
 
 void CommLgc::DEBUG(tMsgPacket *_pckt) {
@@ -50,6 +57,10 @@ void CommLgc::DEBUG(tMsgPacket *_pckt) {
 	}
 	Serial1.println(0xEE, HEX);
 	Serial1.println("--- End Packet ---");
+
+	Serial1.println("-- Free Memory ---");
+	Serial1.println(ESP.getFreeHeap());
+	Serial1.println("-----------------");
 }
 
 void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -74,7 +85,7 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_CURR_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 1);				break;
 			case GET_CURR_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 1);	break;
 			case SCAN_NETWORKS:			scanNetwork(_reqPckt, _resPckt);			break;
-			case START_SERVER_TCP_CMD:	startScanNetwork(_reqPckt, _resPckt);	break;
+			case START_SERVER_TCP_CMD:	break;
 			case GET_STATE_TCP_CMD:					break;
 			case DATA_SENT_TCP_CMD:					break;
 			case AVAIL_DATA_TCP_CMD:				break;
@@ -86,7 +97,7 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_IDX_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 0);				break;
 			case GET_IDX_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 0);	break;
 			case GET_HOST_BY_NAME_CMD:	break;
-			case START_SCAN_NETWORKS:		break;
+			case START_SCAN_NETWORKS:	startScanNetwork(_reqPckt, _resPckt);	break;
 			case SEND_DATA_UDP_CMD:			break;
 			case GET_REMOTE_DATA_CMD:		break;
 			case SEND_DATA_TCP_CMD:			break;
@@ -262,8 +273,8 @@ void CommLgc::begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t idx){
 
 void CommLgc::startScanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO: To be tested
-	// Fake response
 
+	// Fake response
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 
@@ -276,18 +287,17 @@ void CommLgc::scanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO: To be tested
 	uint8_t numNets = WiFi.scanNetworks();
 
-	_resPckt->nParam = numNets;
+	_resPckt->nParam = (numNets <= MAX_PARAMS) ? numNets : MAX_PARAMS;
 
-	for (int i=0; (i<numNets) && (i< MAX_PARAMS); i++)
+	for (int i=0; i<(int)_resPckt->nParam; i++)
 	{
-		//Serial.printf("%d: %s, Ch:%d (%ddBm) %s\n", i + 1, WiFi.SSID(i).c_str(), WiFi.channel(i), WiFi.RSSI(i), WiFi.encryptionType(i) == ENC_TYPE_NONE ? "open" : "");
 		String ssidNet = WiFi.SSID(i).c_str();
 		_resPckt->params[i].paramLen = ssidNet.length() /* + 1*/;
 		_resPckt->params[i].param = (char*)malloc( ssidNet.length() /* + 1 */);
+
 		for(int j=0; j<ssidNet.length(); j++){
-			_resPckt->params[i].param[j] = ssidNet[i];
+			_resPckt->params[i].param[j] = ssidNet[j];
 		}
-		//_resPckt->params[i].param[ssidNet.length()] = 0;
 	}
 }
 
