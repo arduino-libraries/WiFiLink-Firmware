@@ -20,8 +20,7 @@ MCU McuType;
 int BaudRate;
 int SlaveSelectPin;
 
-CommItf::CommItf()
-{
+CommItf::CommItf(){
 	//TODO: MCU selection by compiler flags
 
 	//TEST
@@ -44,8 +43,7 @@ CommItf::CommItf()
 	 }
 }
 
-bool CommItf::begin()
-{
+bool CommItf::begin(){
 	 if(CommChannel == CH_SERIAL){
 	 	Serial.begin(BaudRate);
 
@@ -63,8 +61,7 @@ bool CommItf::begin()
 	return false;
 }
 
-int CommItf::read(tMsgPacket *_pckt)
-{
+int CommItf::read(tMsgPacket *_pckt){
 	if(CommChannel == CH_SERIAL){
 		if(Serial.available()){
 			return createPacketFromSerial(_pckt);
@@ -80,11 +77,8 @@ int CommItf::read(tMsgPacket *_pckt)
 int CommItf::createPacketFromSerial(tMsgPacket *_pckt){
 
 		//TODO read message packet from serial
-		//String raw_pckt = Serial.readStringUntil(END_CMD);
-		String raw_pckt = readStringUntil(END_CMD);
 
-		//for(int x=0;x<raw_pckt.length();x++)
-		//	Serial1.println(raw_pckt[x],HEX);
+		String raw_pckt = readStringUntil(END_CMD);
 
 		int idx = 0;
 		unsigned char tmp = raw_pckt[idx];
@@ -95,33 +89,28 @@ int CommItf::createPacketFromSerial(tMsgPacket *_pckt){
 			return -1;
 		}
 		_pckt->cmd = tmp;
-		//Serial.write(_pckt->cmd);
+
 		//The command
 		tmp = raw_pckt[++idx];
 		_pckt->tcmd = tmp;
-		//Serial.write(_pckt->tcmd);
+
 		//The number of parameters for the command
 		tmp = raw_pckt[++idx];
 		_pckt->nParam = tmp;
-		//Serial.write(_pckt->nParam);
+
 		//Get each parameter
 		for(int a=0; a<(int)_pckt->nParam; a++){
-
 			//Length of the parameter
 			tmp = raw_pckt[++idx];
 			_pckt->params[a].paramLen = tmp;
-			//Serial.write(_pckt->params[a].paramLen);
+
 			_pckt->params[a].param = (char*)malloc(_pckt->params[a].paramLen);
 			//Value of the parameter
 			for(int b=0; b<(int)_pckt->params[a].paramLen; b++){
 				tmp = raw_pckt[++idx];
-				//_pckt->params[a].param += (char)tmp; // _pckt->params[a].param type of String
-				_pckt->params[a].param[b] = (char)tmp;	// _pckt->params[a].param type of char* []
-				//Serial.write(_pckt->params[a].param[b]);
+				_pckt->params[a].param[b] = (char)tmp;
 			}
 		}
-		//Serial.write(0xEE);
-
 		//OK
 		return 0;
 
@@ -132,8 +121,7 @@ int CommItf::createPacketFromSPI(tMsgPacket *_pckt){
 	return -1;
 }
 
-void CommItf::write(tMsgPacket *_pckt)
-{
+void CommItf::write(tMsgPacket *_pckt){
 	if(CommChannel == CH_SERIAL){
 		Serial.write(_pckt->cmd);
 		Serial.write(_pckt->tcmd);
@@ -150,8 +138,7 @@ void CommItf::write(tMsgPacket *_pckt)
 	}
 }
 
-void CommItf::end()
-{
+void CommItf::end(){
 	if(CommChannel == CH_SERIAL){
 		Serial.end();
 	}
@@ -161,29 +148,28 @@ void CommItf::end()
 	 }
 }
 
-//Private Methods/Functions
-int CommItf::timedRead()
-{
-  int c;
-  _startMillis = millis();
-  do {
-    c = Serial.read();
-    if (c >= 0) return c;
-  } while(millis() - _startMillis < _timeout);
-  return -1;     // -1 indicates timeout
+/** Private Functions **/
+
+int CommItf::timedRead(){
+	int c;
+	_startMillis = millis();
+	do {
+		c = Serial.read();
+		if (c >= 0) return c;
+	} while(millis() - _startMillis < _timeout);
+	return -1;     // -1 indicates timeout
 }
 
-String CommItf::readStringUntil(char terminator)
-{
-  String ret;
-  int c = timedRead();
+String CommItf::readStringUntil(char terminator){
+	String ret;
+	int c = timedRead();
 
-  while (c >= 0 && (char)c != terminator)
-  {
-    ret += (char)c;
-    c = timedRead();
-  }
-  return ret;
+	while (c >= 0 && (char)c != terminator)
+	{
+		ret += (char)c;
+		c = timedRead();
+	}
+	return ret;
 }
 
 CommItf CommunicationInterface;
