@@ -64,6 +64,13 @@ void CommLgc::DEBUG(tMsgPacket *_pckt) {
 	Serial1.println("-----------------");
 }
 
+void CommLgc::createErrorResponse(tMsgPacket *_pckt){
+
+	_pckt->cmd = ERR_CMD;
+	_pckt->nParam = 0;
+
+}
+
 void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	if (	(_reqPckt->cmd == START_CMD) &&
@@ -76,8 +83,8 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 			case SET_NET_CMD:					begin(_reqPckt, _resPckt, 0);				break;
 			case SET_PASSPHRASE_CMD:	begin(_reqPckt, _resPckt, 1);				break;
-			case SET_IP_CONFIG_CMD:					break;
-			case SET_DNS_CONFIG_CMD:				break;
+			case SET_IP_CONFIG_CMD:		config(_reqPckt, _resPckt);					break;
+			//case SET_DNS_CONFIG_CMD:				break;
 			case GET_CONN_STATUS_CMD:	getStatus(_reqPckt, _resPckt);			break;
 			case GET_IPADDR_CMD:						break;
 			case GET_MACADDR_CMD:		getMacAddress(_reqPckt, _resPckt);		break;
@@ -86,7 +93,7 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_CURR_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 1);				break;
 			case GET_CURR_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 1);	break;
 			case SCAN_NETWORKS:			scanNetwork(_reqPckt, _resPckt);			break;
-			case START_SERVER_TCP_CMD:	break;
+			case START_SERVER_TCP_CMD:			break;
 			case GET_STATE_TCP_CMD:					break;
 			case DATA_SENT_TCP_CMD:					break;
 			case AVAIL_DATA_TCP_CMD:				break;
@@ -107,13 +114,6 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			default:	createErrorResponse(_resPckt); break;
 		}
 	}
-}
-
-void CommLgc::createErrorResponse(tMsgPacket *_pckt){
-
-	_pckt->cmd = ERR_CMD;
-	_pckt->nParam = 0;
-
 }
 
 /** Commands Functions **/
@@ -220,8 +220,7 @@ void CommLgc::disconnect(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].paramLen = 1;
 
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = result; //char *
-	//_resPckt->params[0].param = (uint8_t)result; //String
+	_resPckt->params[0].param[0] = result;
 
 }
 
@@ -237,7 +236,6 @@ void CommLgc::getStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
-		//_resPckt->params[0].param = (uint8_t)result;
 }
 
 void CommLgc::begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t idx){
@@ -246,7 +244,6 @@ void CommLgc::begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t idx){
 
 	if(idx == 0){ // idx==0 - SET_NET_CMD
 			//retrieve parameters
-			//uint8_t ssid_size = _reqPckt->params[0].paramLen
 			char* ssid = _reqPckt->params[0].param;
 
 			//set network and retrieve result
@@ -256,9 +253,6 @@ void CommLgc::begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t idx){
 			//retrieve parameters
 			char* ssid = _reqPckt->params[0].param;
 			char* pass = _reqPckt->params[1].param;
-
-			//Serial1.println(ssid);
-			//Serial1.println(pass);
 
 			//set network and retrieve result
 			result = WiFi.begin(ssid, pass);
@@ -331,6 +325,70 @@ void CommLgc::getBSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t curre
 	for(int i=0; i<paramLen; i++){
 		_resPckt->params[0].param[i] = result[i];
 	}
+}
+
+void CommLgc::config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	bool result;
+
+	//retrieve the static IP address
+	uint8_t stip1 = _reqPckt->params[0].param[0];
+	uint8_t stip2 = _reqPckt->params[0].param[1];
+	uint8_t stip3 = _reqPckt->params[0].param[2];
+	uint8_t stip4 = _reqPckt->params[0].param[3];
+	IPAddress staticIP(stip1, stip2, stip3, stip4);
+
+	//retrieve the gateway IP address
+	uint8_t gwip1 = _reqPckt->params[1].param[0];
+	uint8_t gwip2 = _reqPckt->params[1].param[1];
+	uint8_t gwip3 = _reqPckt->params[1].param[2];
+	uint8_t gwip4 = _reqPckt->params[1].param[3];
+	IPAddress gateway(gwip1, gwip2, gwip3, gwip4);
+
+	//retrieve the subnet mask
+	uint8_t snip1 = _reqPckt->params[2].param[0];
+	uint8_t snip2 = _reqPckt->params[2].param[1];
+	uint8_t snip3 = _reqPckt->params[2].param[2];
+	uint8_t snip4 = _reqPckt->params[2].param[3];
+	IPAddress subnet(snip1, snip2, snip3, snip4);
+
+	if(_reqPckt->nParam == 3){
+		result = WiFi.config(staticIP, gateway, subnet);
+	}
+	else if(_reqPckt->nParam == 4){
+		//retrieve the dns 1 address
+		uint8_t dns1ip1 = _reqPckt->params[3].param[0];
+		uint8_t dns1ip2 = _reqPckt->params[3].param[1];
+		uint8_t dns1ip3 = _reqPckt->params[3].param[2];
+		uint8_t dns1ip4 = _reqPckt->params[3].param[3];
+		IPAddress dns1(dns1ip1, dns1ip2, dns1ip3, dns1ip4);
+
+		result = WiFi.config(staticIP, gateway, subnet, dns1);
+	}
+	else if(_reqPckt->nParam == 5){
+		//retrieve the dns 1 address
+		uint8_t dns1ip1 = _reqPckt->params[3].param[0];
+		uint8_t dns1ip2 = _reqPckt->params[3].param[1];
+		uint8_t dns1ip3 = _reqPckt->params[3].param[2];
+		uint8_t dns1ip4 = _reqPckt->params[3].param[3];
+		IPAddress dns1(dns1ip1, dns1ip2, dns1ip3, dns1ip4);
+
+		//retrieve the dns 2 address
+		uint8_t dns2ip1 = _reqPckt->params[4].param[0];
+		uint8_t dns2ip2 = _reqPckt->params[4].param[1];
+		uint8_t dns2ip3 = _reqPckt->params[4].param[2];
+		uint8_t dns2ip4 = _reqPckt->params[4].param[3];
+		IPAddress dns2(dns2ip1, dns2ip2, dns2ip3, dns2ip4);
+
+		result = WiFi.config(staticIP, gateway, subnet, dns1, dns2);
+	}
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
+
+
 }
 
 CommLgc CommunicationLogic;

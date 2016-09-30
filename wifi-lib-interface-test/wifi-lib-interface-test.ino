@@ -11,7 +11,10 @@ enum{
   BEGIN_SSID_PASS,
   START_SCAN_NET,
   SCAN_NET,
-  BSSID  
+  BSSID,
+  CONFIG_1,
+  CONFIG_2,
+  CONFIG_3
 };
 
 unsigned long _startMillis;
@@ -39,6 +42,48 @@ String readStringUntil(char terminator)
     c = timedRead();
   }
   return ret;
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial1.begin(9600);
+  Serial.begin(9600);
+
+}
+
+bool a = true;
+void loop() {
+       String prova;
+       //command(ECRY_idx);
+       //command(ECRY);
+       //command(RSSI);
+ 
+       //command(SSID);
+       //command(RSSI_idx);
+       //command(MAC_ADDR);
+       //command(DISCONNECT);
+       //command(STATUS);
+       //command(BEGIN_SSID);
+       //command(BEGIN_SSID_PASS);
+       //command(BEGIN_SSID_PASS);
+       //command(START_SCAN_NET);
+       command(SCAN_NET);
+       //command(BSSID);
+       //command(CONFIG_1); // send ip, gateway and subnet
+       //command(CONFIG_2); // send ip, gateway, subnet and primary dns
+       //command(CONFIG_3);  // send ip, gateway, subnet, primary dns and secondary dns
+       
+       prova = readStringUntil(0xEE);
+       Serial.print("cmd: ");
+       for(int x=0;x<prova.length();x++){
+          Serial.print((uint8_t)prova[x],HEX);
+       }
+       //uint8_t status = (prova[prova.length()-1]);
+       //Serial.print(status);
+       Serial.println();
+      
+       delay(5000); 
+
 }
 
 void command(int cmd){
@@ -166,46 +211,61 @@ void command(int cmd){
          Serial1.write(0xFF);
          Serial1.write(0xEE);
        break;  
+       case 13: //C0NFIG 1
+         Serial1.write(0xE0);
+         Serial1.write(0x14);
+         Serial1.write(3);
+         Serial1.write(4);
+           //192.168.60.182
+           Serial1.write(0xC0); Serial1.write(0xA8); Serial1.write(0x3C); Serial1.write(0xB6);
+         Serial1.write(4);
+           //192.168.60.1
+           Serial1.write(0xC0);Serial1.write(0xA8);Serial1.write(0x3C);Serial1.write(0x01);
+         Serial1.write(4);
+           //255.255.255.0
+           Serial1.write(0xFF);Serial1.write(0xFF);Serial1.write(0xFF);Serial1.write(0x00);
+         Serial1.write(0xEE);
+         break;
+       case 14:  //CONFIG 2
+         Serial1.write(0xE0);
+         Serial1.write(0x14);
+         Serial1.write(4);
+         Serial1.write(4);
+           //192.168.60.182
+           Serial1.write(0xC0); Serial1.write(0xA8); Serial1.write(0x3C); Serial1.write(0xB6);
+         Serial1.write(4);
+           //192.168.60.1
+           Serial1.write(0xC0);Serial1.write(0xA8);Serial1.write(0x3C);Serial1.write(0x01);
+         Serial1.write(4);
+           //255.255.255.0
+           Serial1.write(0xFF);Serial1.write(0xFF);Serial1.write(0xFF);Serial1.write(0x00);
+           //192.168.60.1
+          Serial1.write(4);
+          Serial1.write(0xC0);Serial1.write(0xA8);Serial1.write(0x3C);Serial1.write(0x01);
+         Serial1.write(0xEE);       
+          break;
+       case 15: //CONFIG 3
+         Serial1.write(0xE0);
+         Serial1.write(0x14);
+         Serial1.write(5);
+         Serial1.write(4);
+           //192.168.60.182
+           Serial1.write(0xC0); Serial1.write(0xA8); Serial1.write(0x3C); Serial1.write(0xB6);
+         Serial1.write(4);
+           //192.168.60.1
+           Serial1.write(0xC0);Serial1.write(0xA8);Serial1.write(0x3C);Serial1.write(0x01);
+         Serial1.write(4);
+           //255.255.255.0
+           Serial1.write(0xFF);Serial1.write(0xFF);Serial1.write(0xFF);Serial1.write(0x00);
+           //8.8.8.8
+          Serial1.write(4);
+          Serial1.write(0x08);Serial1.write(0x08);Serial1.write(0x08);Serial1.write(0x08);
+          //8.8.4.4
+          Serial1.write(4);
+          Serial1.write(0x08);Serial1.write(0x08);Serial1.write(0x04);Serial1.write(0x04);
+         Serial1.write(0xEE); 
+         break;
+  
      }
 
   }
-
-
-void setup() {
-  // put your setup code here, to run once:
-  Serial1.begin(9600);
-  Serial.begin(9600);
-
-}
-
-bool a = true;
-void loop() {
-       String prova;
-       //command(ECRY_idx);
-       //command(ECRY);
-       //command(RSSI);
- 
-       //command(SSID);
-       //command(RSSI_idx);
-       //command(MAC_ADDR);
-       //command(DISCONNECT);
-       //command(STATUS);
-       //command(BEGIN_SSID);
-       //command(BEGIN_SSID_PASS);
-       //command(BEGIN_SSID_PASS);
-       //command(START_SCAN_NET);
-       //command(SCAN_NET);
-       command(BSSID);
-       
-       prova = readStringUntil(0xEE);
-       Serial.print("cmd: ");
-       for(int x=0;x<prova.length();x++){
-          Serial.print((uint8_t)prova[x],HEX);
-       }
-       //uint8_t status = (prova[prova.length()-1]);
-       //Serial.print(status);
-       Serial.println();
-      
-       delay(5000); 
-
-}

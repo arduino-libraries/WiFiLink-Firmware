@@ -11,10 +11,14 @@ public:
 	CommLgc();
   void begin();
 	void handle();
+
 private:
-	void createErrorResponse(tMsgPacket *_pckt);
+	/* Logic Functions */
 	void freeMem(tMsgPacket *_pckt);
+	void DEBUG(tMsgPacket *_pckt);
+	void createErrorResponse(tMsgPacket *_pckt);
 	void process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	/* Commands Functions */
 	void getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void getEncryption(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
@@ -25,8 +29,9 @@ private:
 	void startScanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void scanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getBSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
+	void config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 
-	void DEBUG(tMsgPacket *_pckt);
+
 
 };
 
