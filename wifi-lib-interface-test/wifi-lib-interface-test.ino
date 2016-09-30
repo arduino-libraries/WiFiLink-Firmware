@@ -10,7 +10,8 @@ enum{
   BEGIN_SSID,
   BEGIN_SSID_PASS,
   START_SCAN_NET,
-  SCAN_NET
+  SCAN_NET,
+  BSSID  
 };
 
 unsigned long _startMillis;
@@ -157,6 +158,14 @@ void command(int cmd){
          Serial1.write(0);
          Serial1.write(0xEE);
         break;
+      case 12: //SCAN NET
+         Serial1.write(0xE0);
+         Serial1.write(0x24);
+         Serial1.write(1);
+         Serial1.write(1);
+         Serial1.write(0xFF);
+         Serial1.write(0xEE);
+       break;  
      }
 
   }
@@ -176,7 +185,7 @@ void loop() {
        //command(ECRY);
        //command(RSSI);
  
-       //  command(SSID);
+       //command(SSID);
        //command(RSSI_idx);
        //command(MAC_ADDR);
        //command(DISCONNECT);
@@ -184,8 +193,9 @@ void loop() {
        //command(BEGIN_SSID);
        //command(BEGIN_SSID_PASS);
        //command(BEGIN_SSID_PASS);
-       command(START_SCAN_NET);
+       //command(START_SCAN_NET);
        //command(SCAN_NET);
+       command(BSSID);
        
        prova = readStringUntil(0xEE);
        Serial.print("cmd: ");
@@ -196,7 +206,6 @@ void loop() {
        //Serial.print(status);
        Serial.println();
       
-
        delay(5000); 
 
 }

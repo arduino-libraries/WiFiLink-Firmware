@@ -5,18 +5,19 @@
 #include <ESP8266WiFiScan.h>
 #include "utility/wifi_utils.h"
 
-CommLgc::CommLgc()
-{
+#define FW_VERSION "0.0.1"
+
+CommLgc::CommLgc(){
 	//while(!CommunicationInterface.begin());
 }
 
-void CommLgc::begin()
-{
+/** Logic Functions **/
+
+void CommLgc::begin(){
    while(!CommunicationInterface.begin());
 }
 
-void CommLgc::handle()
-{
+void CommLgc::handle(){
 
 	tMsgPacket pckt1;
 	tMsgPacket *reqPckt = &pckt1;
@@ -81,7 +82,7 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_IPADDR_CMD:						break;
 			case GET_MACADDR_CMD:		getMacAddress(_reqPckt, _resPckt);		break;
 			case GET_CURR_SSID_CMD: getCurrentSSID(_reqPckt, _resPckt);		break;
-			case GET_CURR_BSSID_CMD:				break;
+			case GET_CURR_BSSID_CMD:getBSSID(_reqPckt, _resPckt, 1);			break;
 			case GET_CURR_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 1);				break;
 			case GET_CURR_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 1);	break;
 			case SCAN_NETWORKS:			scanNetwork(_reqPckt, _resPckt);			break;
@@ -114,6 +115,8 @@ void CommLgc::createErrorResponse(tMsgPacket *_pckt){
 	_pckt->nParam = 0;
 
 }
+
+/** Commands Functions **/
 
 void CommLgc::getRSSI(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current){
 	//TODO: To be tested
@@ -185,8 +188,7 @@ void CommLgc::getEncryption(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t 
 	_resPckt->params[0].paramLen = 1;
 
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = result;	//char* []
-	//_resPckt->params[0].param = (char)result; //String
+	_resPckt->params[0].param[0] = result;
 }
 
 void CommLgc::getMacAddress(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -203,8 +205,7 @@ void CommLgc::getMacAddress(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	for(int i=0; i<paramLen; i++){
-		//_resPckt->params[0].param += (char)mac[i]; //String
-		_resPckt->params[0].param[i] = mac[i];	//char* []
+		_resPckt->params[0].param[i] = mac[i];
 	}
 }
 
@@ -301,5 +302,35 @@ void CommLgc::scanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	}
 }
 
+void CommLgc::getBSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current){
+	//TODO: To be tested
+	int paramLen = 6;
+	uint8_t idx = 0;
+	uint8_t* result;
+	uint8_t numNets = WiFi.scanNetworks();	//get networks numbers
+
+	if(current == 1){
+		String currSSID = WiFi.SSID();					//get current SSID
+		for(int i=0; i<numNets; i++){
+			if(currSSID == WiFi.SSID(i)){
+				idx = i;	//get the index of the current network
+				break;
+			}
+		}
+	}else {
+		//TODO: not present in arduino wifi shield library
+	}
+
+	//Retrive the BSSID
+	result = WiFi.BSSID(idx);
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = paramLen;
+
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	for(int i=0; i<paramLen; i++){
+		_resPckt->params[0].param[i] = result[i];
+	}
+}
 
 CommLgc CommunicationLogic;

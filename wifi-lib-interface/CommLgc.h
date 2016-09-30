@@ -24,6 +24,7 @@ private:
 	void begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void startScanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void scanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void getBSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 
 	void DEBUG(tMsgPacket *_pckt);
 
