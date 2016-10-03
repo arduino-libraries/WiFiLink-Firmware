@@ -95,7 +95,7 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_CURR_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 1);				break;
 			case GET_CURR_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 1);	break;
 			case SCAN_NETWORKS:			scanNetwork(_reqPckt, _resPckt);			break;
-			case START_SERVER_TCP_CMD:	startServer(_reqPckt, _resPckt);	break;
+			//case START_SERVER_TCP_CMD:	startServer(_reqPckt, _resPckt);	break;
 			case GET_STATE_TCP_CMD:					break;
 			case DATA_SENT_TCP_CMD:					break;
 			case AVAIL_DATA_TCP_CMD:				break;
@@ -398,77 +398,77 @@ void CommLgc::config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 }
 
 /* WiFI Server */
-void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-	//TODO: To be tested
-	int _port = 0;
-	int _socks = 0;
-	uint8_t _prot_mode = 0;
-
-	// String _ports = ;
-	// //retrieve the port to start server
-	// for(int i=0;  i< (int)_reqPckt->params[0].paramLen; i++){
-	// 	_ports += _reqPckt->params[0].param[i];
-	// }
-	// _port = _ports.toInt();
-	getParam(&_reqPckt->params[0], (uint8_t*)_port);
-
-	//retrieve sockets number
-	//_socks = (int)_reqPckt->params[1].param[0];
-	getParam(&_reqPckt->params[1], (uint8_t*)_socks);
-
-	//retrieve protocol mode (TCP/UDP)
-	//_prot_mode = (uint8_t)_reqPckt->params[2].param[0];
-	getParam(&_reqPckt->params[2], &_prot_mode);
-
-	delete _wifi_server;
-	_wifi_server = new WiFiServer(_port);
-	_wifi_server->begin();
-
-	//TODO sockets and protocol
-
-	//set the response struct
-	_resPckt->nParam = 1;
-	_resPckt->params[0].paramLen = 1;
-	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = 1;
-
-}
-
-void CommLgc::available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-}
-
-void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-	//TODO: To be tested
-	uint8_t result;
-	uint8_t _socket;
-
-	//retrieve socket index
-	_socket = (uint8_t)_reqPckt->params[0].param[0];
-
-	//NOTE =0 is the case of a direct call to WiFiServer.status();
-	if(_socket == 0){
-		result = _wifi_server->status();
-	}
-	//NOTE >0 are the cases of a non-direct calls, like WiFiServer.available();
-	else {
-		//TODO ???
-	}
-
-	//set the response struct
-	_resPckt->nParam = 1;
-	_resPckt->params[0].paramLen = 1;
-	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = result;
-
-}
-
-
-
-void CommLgc::getParam(tParam *param, uint8_t *data){
-	for(int i=0; i< param->paramLen; i++){
-		data[i] = param->param[i];
-	}
-}
+// void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+// 	//TODO: To be tested
+// 	int _port = 0;
+// 	int _socks = 0;
+// 	uint8_t _prot_mode = 0;
+//
+// 	// String _ports = ;
+// 	// //retrieve the port to start server
+// 	// for(int i=0;  i< (int)_reqPckt->params[0].paramLen; i++){
+// 	// 	_ports += _reqPckt->params[0].param[i];
+// 	// }
+// 	// _port = _ports.toInt();
+// 	getParam(&_reqPckt->params[0], (uint8_t*)_port);
+//
+// 	//retrieve sockets number
+// 	//_socks = (int)_reqPckt->params[1].param[0];
+// 	getParam(&_reqPckt->params[1], (uint8_t*)_socks);
+//
+// 	//retrieve protocol mode (TCP/UDP)
+// 	//_prot_mode = (uint8_t)_reqPckt->params[2].param[0];
+// 	getParam(&_reqPckt->params[2], &_prot_mode);
+//
+// 	delete _wifi_server;
+// 	_wifi_server = new WiFiServer(_port);
+// 	_wifi_server->begin();
+//
+// 	//TODO sockets and protocol
+//
+// 	//set the response struct
+// 	_resPckt->nParam = 1;
+// 	_resPckt->params[0].paramLen = 1;
+// 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+// 	_resPckt->params[0].param[0] = 1;
+//
+// }
+//
+// void CommLgc::available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+// }
+//
+// void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+// 	//TODO: To be tested
+// 	uint8_t result;
+// 	uint8_t _socket;
+//
+// 	//retrieve socket index
+// 	_socket = (uint8_t)_reqPckt->params[0].param[0];
+//
+// 	//NOTE =0 is the case of a direct call to WiFiServer.status();
+// 	if(_socket == 0){
+// 		result = _wifi_server->status();
+// 	}
+// 	//NOTE >0 are the cases of a non-direct calls, like WiFiServer.available();
+// 	else {
+// 		//TODO ???
+// 	}
+//
+// 	//set the response struct
+// 	_resPckt->nParam = 1;
+// 	_resPckt->params[0].paramLen = 1;
+// 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+// 	_resPckt->params[0].param[0] = result;
+//
+// }
+//
+//
+//
+// void CommLgc::getParam(tParam *param, uint8_t *data){
+// 	for(int i=0; i< param->paramLen; i++){
+// 		data[i] = param->param[i];
+// 	}
+// }
 //TODO code a function to get/set params from/to the request/response struct
 
 // setParam(tParam *param, char* data){
