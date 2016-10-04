@@ -18,7 +18,7 @@ private:
 	void DEBUG(tMsgPacket *_pckt);
 	void createErrorResponse(tMsgPacket *_pckt);
 	void process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
-	//void getParam(tParam *param, uint8_t * data);
+	void getParam(tParam *param, uint8_t * data);
 
 	/* Commands Functions */
 
@@ -35,10 +35,13 @@ private:
 	void getBSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 
+	/* WiFI IPAddress */
+	void getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+
 	/* WiFi Server */
-	// void startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
-	// void available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
-	// void serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 };
 
 extern CommLgc CommunicationLogic;

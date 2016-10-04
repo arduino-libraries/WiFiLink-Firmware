@@ -28,12 +28,13 @@ void CommLgc::handle(){
 	tMsgPacket *resPckt = &pckt2;
 
 	if( CommunicationInterface.read(reqPckt) == 0){
-
+		Serial1.println("==== RECEIVED ====");
 		DEBUG(reqPckt);
-
+		Serial1.println("==================");
 		process(reqPckt, resPckt);
-
+		Serial1.println("=== TRANSMITTED ==");
 		DEBUG(resPckt);
+		Serial1.println("==================");
 		CommunicationInterface.write(resPckt);
 		freeMem(reqPckt);
 		freeMem(resPckt);
@@ -83,31 +84,31 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 		switch(_reqPckt->tcmd){
 
-			case SET_NET_CMD:					begin(_reqPckt, _resPckt, 0);				break;
-			case SET_PASSPHRASE_CMD:	begin(_reqPckt, _resPckt, 1);				break;
-			case SET_IP_CONFIG_CMD:		config(_reqPckt, _resPckt);					break;
+			case SET_NET_CMD:						begin(_reqPckt, _resPckt, 0);			break;
+			case SET_PASSPHRASE_CMD:		begin(_reqPckt, _resPckt, 1);			break;
+			case SET_IP_CONFIG_CMD:			config(_reqPckt, _resPckt);				break;
 			//case SET_DNS_CONFIG_CMD:				break;
-			case GET_CONN_STATUS_CMD:	getStatus(_reqPckt, _resPckt);			break;
-			case GET_IPADDR_CMD:						break;
+			case GET_CONN_STATUS_CMD:		getStatus(_reqPckt, _resPckt);		break;
+			case GET_IPADDR_CMD:		getNetworkData(_reqPckt, _resPckt);		break;
 			case GET_MACADDR_CMD:		getMacAddress(_reqPckt, _resPckt);		break;
 			case GET_CURR_SSID_CMD: getCurrentSSID(_reqPckt, _resPckt);		break;
 			case GET_CURR_BSSID_CMD:getBSSID(_reqPckt, _resPckt, 1);			break;
 			case GET_CURR_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 1);				break;
 			case GET_CURR_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 1);	break;
 			case SCAN_NETWORKS:			scanNetwork(_reqPckt, _resPckt);			break;
-			//case START_SERVER_TCP_CMD:	startServer(_reqPckt, _resPckt);	break;
-			case GET_STATE_TCP_CMD:					break;
+			case START_SERVER_TCP_CMD:	startServer(_reqPckt, _resPckt);	break;
+			case GET_STATE_TCP_CMD:			serverStatus(_reqPckt, _resPckt);	break;
 			case DATA_SENT_TCP_CMD:					break;
 			case AVAIL_DATA_TCP_CMD:				break;
 			case GET_DATA_TCP_CMD:					break;
 			case START_CLIENT_TCP_CMD:			break;
 			case STOP_CLIENT_TCP_CMD:				break;
 			case GET_CLIENT_STATE_TCP_CMD:	break;
-			case DISCONNECT_CMD:		disconnect(_reqPckt, _resPckt);				break;
-			case GET_IDX_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 0);				break;
-			case GET_IDX_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 0);	break;
+			case DISCONNECT_CMD:			disconnect(_reqPckt, _resPckt);					break;
+			case GET_IDX_RSSI_CMD:		getRSSI(_reqPckt, _resPckt, 0);					break;
+			case GET_IDX_ENCT_CMD:		getEncryption(_reqPckt, _resPckt, 0);		break;
 			case GET_HOST_BY_NAME_CMD:	break;
-			case START_SCAN_NETWORKS:	startScanNetwork(_reqPckt, _resPckt);	break;
+			case START_SCAN_NETWORKS:		startScanNetwork(_reqPckt, _resPckt);	break;
 			case SEND_DATA_UDP_CMD:			break;
 			case GET_REMOTE_DATA_CMD:		break;
 			case SEND_DATA_TCP_CMD:			break;
@@ -397,73 +398,114 @@ void CommLgc::config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 }
 
+/* WiFi IPAddress*/
+void CommLgc::getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+
+	IPAddress localIp, subnetMask, gatewayIp, dnsIp;
+
+	localIp = WiFi.localIP();
+	subnetMask = WiFi.subnetMask();
+	gatewayIp = WiFi.gatewayIP();
+	//dnsIp = WiFi.dnsIP();
+
+	_resPckt->nParam = 3;
+	_resPckt->params[0].paramLen = 4;
+	_resPckt->params[1].paramLen = 4;
+	_resPckt->params[2].paramLen = 4;
+
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = localIp.operator[](0);
+	_resPckt->params[0].param[1] = localIp.operator[](1);
+	_resPckt->params[0].param[2] = localIp.operator[](2);
+	_resPckt->params[0].param[3] = localIp.operator[](3);
+
+	_resPckt->params[1].param = (char*)malloc(_resPckt->params[1].paramLen);
+	_resPckt->params[1].param[0] = subnetMask.operator[](0);
+	_resPckt->params[1].param[1] = subnetMask.operator[](1);
+	_resPckt->params[1].param[2] = subnetMask.operator[](2);
+	_resPckt->params[1].param[3] = subnetMask.operator[](3);
+
+	_resPckt->params[2].param = (char*)malloc(_resPckt->params[2].paramLen);
+	_resPckt->params[2].param[0] = gatewayIp.operator[](0);
+	_resPckt->params[2].param[1] = gatewayIp.operator[](1);
+	_resPckt->params[2].param[2] = gatewayIp.operator[](2);
+	_resPckt->params[2].param[3] = gatewayIp.operator[](3);
+
+}
+
+
 /* WiFI Server */
-// void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-// 	//TODO: To be tested
-// 	int _port = 0;
-// 	int _socks = 0;
-// 	uint8_t _prot_mode = 0;
-//
-// 	// String _ports = ;
-// 	// //retrieve the port to start server
-// 	// for(int i=0;  i< (int)_reqPckt->params[0].paramLen; i++){
-// 	// 	_ports += _reqPckt->params[0].param[i];
-// 	// }
-// 	// _port = _ports.toInt();
-// 	getParam(&_reqPckt->params[0], (uint8_t*)_port);
-//
-// 	//retrieve sockets number
-// 	//_socks = (int)_reqPckt->params[1].param[0];
-// 	getParam(&_reqPckt->params[1], (uint8_t*)_socks);
-//
-// 	//retrieve protocol mode (TCP/UDP)
-// 	//_prot_mode = (uint8_t)_reqPckt->params[2].param[0];
-// 	getParam(&_reqPckt->params[2], &_prot_mode);
-//
-// 	delete _wifi_server;
-// 	_wifi_server = new WiFiServer(_port);
-// 	_wifi_server->begin();
-//
-// 	//TODO sockets and protocol
-//
-// 	//set the response struct
-// 	_resPckt->nParam = 1;
-// 	_resPckt->params[0].paramLen = 1;
-// 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-// 	_resPckt->params[0].param[0] = 1;
-//
-// }
-//
-// void CommLgc::available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-// }
-//
-// void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-// 	//TODO: To be tested
-// 	uint8_t result;
-// 	uint8_t _socket;
-//
-// 	//retrieve socket index
-// 	_socket = (uint8_t)_reqPckt->params[0].param[0];
-//
-// 	//NOTE =0 is the case of a direct call to WiFiServer.status();
-// 	if(_socket == 0){
-// 		result = _wifi_server->status();
-// 	}
-// 	//NOTE >0 are the cases of a non-direct calls, like WiFiServer.available();
-// 	else {
-// 		//TODO ???
-// 	}
-//
-// 	//set the response struct
-// 	_resPckt->nParam = 1;
-// 	_resPckt->params[0].paramLen = 1;
-// 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-// 	_resPckt->params[0].param[0] = result;
-//
-// }
-//
-//
-//
+void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	int _port = 0;
+	int _socks = 0;
+	uint8_t _prot_mode = 0;
+
+	String _ports;
+	//retrieve the port to start server
+	for(int i=0;  i<(int)_reqPckt->params[0].paramLen; i++){
+		_ports += _reqPckt->params[0].param[i];
+	}
+	_port = _ports.toInt();
+	//getParam(&_reqPckt->params[0], (uint8_t*)_port);
+
+	//retrieve sockets number
+	_socks = (int)_reqPckt->params[1].param[0];
+	//getParam(&_reqPckt->params[1], (uint8_t*)_socks);
+
+	//retrieve protocol mode (TCP/UDP)
+	_prot_mode = (uint8_t)_reqPckt->params[2].param[0];
+	//getParam(&_reqPckt->params[2], &_prot_mode);
+
+	delete _wifi_server;
+	_wifi_server = new WiFiServer(_port);
+	_wifi_server->begin();
+
+	//TODO sockets and protocol
+
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = 1;
+
+}
+
+void CommLgc::available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO
+}
+
+void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	uint8_t result = 0;
+	uint8_t _socket = 0;
+
+	//retrieve socket index
+	_socket = (uint8_t)_reqPckt->params[0].param[0];
+
+	//NOTE =0 is the case of a direct call to WiFiServer.status();
+	if(_socket == 0){
+		if(_wifi_server != NULL){
+			result = _wifi_server->status();
+		} else { //wifi server is not started
+			result = 0; //TODO take a look and understand the correct value for this case
+		}
+
+	}
+	//NOTE >0 are the cases of a non-direct calls, like WiFiServer.available();
+	else {
+		//TODO ???
+	}
+
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
+
+}
+
 // void CommLgc::getParam(tParam *param, uint8_t *data){
 // 	for(int i=0; i< param->paramLen; i++){
 // 		data[i] = param->param[i];

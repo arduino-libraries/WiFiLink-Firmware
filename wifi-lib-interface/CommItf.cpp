@@ -76,8 +76,6 @@ int CommItf::read(tMsgPacket *_pckt){
 
 int CommItf::createPacketFromSerial(tMsgPacket *_pckt){
 
-		//TODO read message packet from serial
-
 		String raw_pckt = readStringUntil(END_CMD);
 
 		int idx = 0;
