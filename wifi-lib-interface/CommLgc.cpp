@@ -9,6 +9,9 @@
 
 WiFiServer* _wifi_server;
 
+//cached values
+IPAddress _reqHostIp;
+
 CommLgc::CommLgc(){
 	//while(!CommunicationInterface.begin());
 }
@@ -104,10 +107,11 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case START_CLIENT_TCP_CMD:			break;
 			case STOP_CLIENT_TCP_CMD:				break;
 			case GET_CLIENT_STATE_TCP_CMD:	break;
-			case DISCONNECT_CMD:			disconnect(_reqPckt, _resPckt);					break;
-			case GET_IDX_RSSI_CMD:		getRSSI(_reqPckt, _resPckt, 0);					break;
-			case GET_IDX_ENCT_CMD:		getEncryption(_reqPckt, _resPckt, 0);		break;
-			case GET_HOST_BY_NAME_CMD:	break;
+			case DISCONNECT_CMD:				disconnect(_reqPckt, _resPckt);				break;
+			case GET_IDX_RSSI_CMD:			getRSSI(_reqPckt, _resPckt, 0);				break;
+			case GET_IDX_ENCT_CMD:			getEncryption(_reqPckt, _resPckt, 0);	break;
+			case REQ_HOST_BY_NAME_CMD:	reqHostByName(_reqPckt, _resPckt);		break;
+			case GET_HOST_BY_NAME_CMD:	getHostByName(_reqPckt, _resPckt);		break;
 			case START_SCAN_NETWORKS:		startScanNetwork(_reqPckt, _resPckt);	break;
 			case SEND_DATA_UDP_CMD:			break;
 			case GET_REMOTE_DATA_CMD:		break;
@@ -398,6 +402,37 @@ void CommLgc::config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 }
 
+
+void CommLgc::reqHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+	char* host;
+	int result;
+
+	host = _reqPckt->params[0].param; //get the host name to look up
+	result = WiFi.hostByName(host, _reqHostIp); //retrieve the ip address of the host
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
+
+}
+
+void CommLgc::getHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+
+	//gets _reqHostIp (obtained before using reqHostByName) and send back to arduino
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 4;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = _reqHostIp.operator[](0);
+	_resPckt->params[0].param[1] = _reqHostIp.operator[](1);
+	_resPckt->params[0].param[2] = _reqHostIp.operator[](2);
+	_resPckt->params[0].param[3] = _reqHostIp.operator[](3);
+
+}
+
 /* WiFi IPAddress*/
 void CommLgc::getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
@@ -473,6 +508,7 @@ void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 }
 
 void CommLgc::available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
 	//TODO
 }
 
@@ -505,6 +541,50 @@ void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].param[0] = result;
 
 }
+
+
+/* WiFi Client */
+void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+	//TODO
+}
+
+void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+	//TODO
+	uint8_t result = 0;
+	uint8_t _socket = 0; //socket index
+
+	// //retrieve socket index
+	// _socket = (uint8_t)_reqPckt->params[0].param[0];
+	//
+	// //NOTE =0 is the case of a direct call to WiFiClient.status();
+	// if(_socket == 0){
+	// 	if(/*_wifi_server*/ != NULL){
+	// 		result = /*_wifi_server->status()*/;
+	// 	} else { //wifi server is not started
+	// 		result = 0; //TODO take a look and understand the correct value for this case
+	// 	}
+	//
+	// }
+	// //NOTE >0 are the cases of a non-direct calls, like WiFiServer.available();
+	// else {
+	// 	//TODO ???
+	// }
+
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
+
+}
+
+void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+	//TODO
+}
+
 
 // void CommLgc::getParam(tParam *param, uint8_t *data){
 // 	for(int i=0; i< param->paramLen; i++){

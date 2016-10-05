@@ -34,6 +34,8 @@ private:
 	void scanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getBSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void reqHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void getHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 
 	/* WiFI IPAddress */
 	void getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
@@ -42,6 +44,11 @@ private:
 	void startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+
+	/* WiFi Client */
+	void startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 };
 
 extern CommLgc CommunicationLogic;

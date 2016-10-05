@@ -18,6 +18,9 @@ enum{
 
 	START_SERVER,
 	SERVER_STATUS,
+
+	REQ_HOST,
+	GET_HOST
 };
 
 unsigned long _startMillis;
@@ -76,7 +79,9 @@ void loop() {
 			 //command(CONFIG_2); // send ip, gateway, subnet and primary dns
 			 //command(CONFIG_3);	// send ip, gateway, subnet, primary dns and secondary dns
 			 //command(START_SERVER);
-			 command(SERVER_STATUS);
+			 //command(SERVER_STATUS);
+			 command(REQ_HOST);
+			 command(GET_HOST);
 
 			 prova = readStringUntil(0xEE);
 			 Serial.print("cmd: ");
@@ -289,6 +294,25 @@ void command(int cmd){
 					Serial1.write(1);
 					Serial1.write(1);
 					Serial1.write(0x00);
+					Serial1.write(0xEE);
+				break;
+				case 18:	//REQ HOST
+					Serial1.write(0xE0);
+					Serial1.write(0x34);
+					Serial1.write(1);
+					Serial1.write(0x0E);
+						//www.
+						Serial1.write(0x77);Serial1.write(0x77);Serial1.write(0x77);Serial1.write(0x2E);
+						//google
+						Serial1.write(0x67);Serial1.write(0x6F);Serial1.write(0x6F);Serial1.write(0x67);Serial1.write(0x6C);Serial1.write(0x65);
+						//.com
+						Serial1.write(0x2E);Serial1.write(0x63);Serial1.write(0x6F);Serial1.write(0x6D);
+					Serial1.write(0xEE);
+				break;
+				case 19:	//GET HOST
+					Serial1.write(0xE0);
+					Serial1.write(0x35);
+					Serial1.write(0);
 					Serial1.write(0xEE);
 				break;
 
