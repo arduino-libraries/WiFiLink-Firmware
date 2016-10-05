@@ -5,7 +5,7 @@
 #include <ESP8266WiFiScan.h>
 #include "utility/wifi_utils.h"
 
-#define FW_VERSION "0.0.1"
+char FW_VERSION[] = "0.0.1";
 
 WiFiServer* _wifi_server;
 
@@ -112,6 +112,7 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_IDX_ENCT_CMD:			getEncryption(_reqPckt, _resPckt, 0);	break;
 			case REQ_HOST_BY_NAME_CMD:	reqHostByName(_reqPckt, _resPckt);		break;
 			case GET_HOST_BY_NAME_CMD:	getHostByName(_reqPckt, _resPckt);		break;
+			case GET_FW_VERSION_CMD:		getFwVersion(_reqPckt, _resPckt);			break;
 			case START_SCAN_NETWORKS:		startScanNetwork(_reqPckt, _resPckt);	break;
 			case SEND_DATA_UDP_CMD:			break;
 			case GET_REMOTE_DATA_CMD:		break;
@@ -167,7 +168,7 @@ void CommLgc::getCurrentSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	for(int i=0; i< result.length(); i++){ //char *
 		_resPckt->params[0].param[i] = result[i];
 	}
-	//_resPckt->params[0].param = result;//String
+
 
 }
 
@@ -430,6 +431,18 @@ void CommLgc::getHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].param[1] = _reqHostIp.operator[](1);
 	_resPckt->params[0].param[2] = _reqHostIp.operator[](2);
 	_resPckt->params[0].param[3] = _reqHostIp.operator[](3);
+
+}
+
+void CommLgc::getFwVersion(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+
+	//send back to arduino the firmware version number
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = sizeof(FW_VERSION)-1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	strncpy(_resPckt->params[0].param, FW_VERSION, _resPckt->params[0].paramLen) ;
 
 }
 

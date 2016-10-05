@@ -20,7 +20,9 @@ enum{
 	SERVER_STATUS,
 
 	REQ_HOST,
-	GET_HOST
+	GET_HOST,
+
+	GET_FW_VER
 };
 
 unsigned long _startMillis;
@@ -64,7 +66,7 @@ void loop() {
 			 //command(ECRY);
 			 //command(RSSI);
 
-			 //command(SSID);
+			 command(SSID);
 			 //command(RSSI_idx);
 			 //command(MAC_ADDR);
 			 //command(DISCONNECT);
@@ -80,8 +82,9 @@ void loop() {
 			 //command(CONFIG_3);	// send ip, gateway, subnet, primary dns and secondary dns
 			 //command(START_SERVER);
 			 //command(SERVER_STATUS);
-			 command(REQ_HOST);
-			 command(GET_HOST);
+			 //command(REQ_HOST);
+			 //command(GET_HOST);
+			 command(GET_FW_VER);
 
 			 prova = readStringUntil(0xEE);
 			 Serial.print("cmd: ");
@@ -175,45 +178,30 @@ void command(int cmd){
 				 Serial1.write(0x73);
 			 Serial1.write(0xEE);
 			 break;
-		 case 9: //begin with ssid and password
+		 case BEGIN_SSID_PASS: //begin with ssid and password
 			 Serial1.write(0xE0);
 			 Serial1.write(0x11);
 			 Serial1.write(2);
 			 Serial1.write(6);
-				 Serial1.write(0x44);
-				 Serial1.write(0x48);
-				 Serial1.write(0x4C);
-				 Serial1.write(0x61);
-				 Serial1.write(0x62);
-				 Serial1.write(0x73);
+				 Serial1.write(0x44);Serial1.write(0x48);Serial1.write(0x4C);Serial1.write(0x61);Serial1.write(0x62);Serial1.write(0x73);
 			 Serial1.write(0x0C);
-				 Serial1.write(0x64);
-				 Serial1.write(0x68);
-				 Serial1.write(0x6C);
-				 Serial1.write(0x61);
-				 Serial1.write(0x62);
-				 Serial1.write(0x73);
-				 Serial1.write(0x72);
-				 Serial1.write(0x66);
-				 Serial1.write(0x69);
-				 Serial1.write(0x64);
-				 Serial1.write(0x30);
-				 Serial1.write(0x31);
+				 Serial1.write(0x64);Serial1.write(0x68);Serial1.write(0x6C);Serial1.write(0x61);Serial1.write(0x62);Serial1.write(0x73);
+				 Serial1.write(0x72);Serial1.write(0x66);Serial1.write(0x69);Serial1.write(0x64);Serial1.write(0x30);Serial1.write(0x31);
 			 Serial1.write(0xEE);
 			 break;
-			case 10: //START SCAN NET
+			case START_SCAN_NET: //START SCAN NET
 				 Serial1.write(0xE0);
 				 Serial1.write(0x36);
 				 Serial1.write(0);
 				 Serial1.write(0xEE);
 				break;
-			case 11: //SCAN NET
+			case SCAN_NET: //get the ssid of found networks
 				 Serial1.write(0xE0);
 				 Serial1.write(0x27);
 				 Serial1.write(0);
 				 Serial1.write(0xEE);
 				break;
-			case 12: //SCAN NET
+			case BSSID: //get the BSSID
 				 Serial1.write(0xE0);
 				 Serial1.write(0x24);
 				 Serial1.write(1);
@@ -221,7 +209,7 @@ void command(int cmd){
 				 Serial1.write(0xFF);
 				 Serial1.write(0xEE);
 				break;
-			 case 13: //C0NFIG 1
+			 case CONFIG_1: //Set the WiFi local ip, gateway ip and subnet mask
 				 Serial1.write(0xE0);
 				 Serial1.write(0x14);
 				 Serial1.write(3);
@@ -236,7 +224,7 @@ void command(int cmd){
 					 Serial1.write(0xFF);Serial1.write(0xFF);Serial1.write(0xFF);Serial1.write(0x00);
 				 Serial1.write(0xEE);
 				 break;
-			 case 14:	//CONFIG 2
+			 case CONFIG_2:	//Set the WiFi local ip, gateway ip, subnet mask and primary dns
 				 Serial1.write(0xE0);
 				 Serial1.write(0x14);
 				 Serial1.write(4);
@@ -254,7 +242,7 @@ void command(int cmd){
 					Serial1.write(0xC0);Serial1.write(0xA8);Serial1.write(0x3C);Serial1.write(0x01);
 				 Serial1.write(0xEE);
 					break;
-			 case 15: //CONFIG 3
+			 case CONFIG_3: //Set the WiFi local ip, gateway ip, subnet mask, primary dns and secondary dns
 				 Serial1.write(0xE0);
 				 Serial1.write(0x14);
 				 Serial1.write(5);
@@ -275,7 +263,7 @@ void command(int cmd){
 					Serial1.write(0x08);Serial1.write(0x08);Serial1.write(0x04);Serial1.write(0x04);
 				 Serial1.write(0xEE);
 				 break;
-				case 16:	//START SERVER
+				case START_SERVER:	//START SERVER
 					Serial1.write(0xE0);
 					Serial1.write(0x28);
 					Serial1.write(3);
@@ -288,7 +276,7 @@ void command(int cmd){
 					Serial1.write(0x00); //00	- PROT MODE
 					Serial1.write(0xEE);
 				break;
-				case 17:	//SERVER STATUS
+				case SERVER_STATUS:	//SERVER STATUS
 					Serial1.write(0xE0);
 					Serial1.write(0x29);
 					Serial1.write(1);
@@ -296,7 +284,7 @@ void command(int cmd){
 					Serial1.write(0x00);
 					Serial1.write(0xEE);
 				break;
-				case 18:	//REQ HOST
+				case REQ_HOST:	//Send a command to request the ip address of the specified host
 					Serial1.write(0xE0);
 					Serial1.write(0x34);
 					Serial1.write(1);
@@ -309,9 +297,15 @@ void command(int cmd){
 						Serial1.write(0x2E);Serial1.write(0x63);Serial1.write(0x6F);Serial1.write(0x6D);
 					Serial1.write(0xEE);
 				break;
-				case 19:	//GET HOST
+				case GET_HOST:	//send a command to get the response of REQ_HOST command. it gets the IP address of the host specified before
 					Serial1.write(0xE0);
 					Serial1.write(0x35);
+					Serial1.write(0);
+					Serial1.write(0xEE);
+				break;
+				case GET_FW_VER: //Get the firmware version on the ESP8266
+					Serial1.write(0xE0);
+					Serial1.write(0x37);
 					Serial1.write(0);
 					Serial1.write(0xEE);
 				break;

@@ -36,7 +36,7 @@ private:
 	void config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void reqHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
-
+	void getFwVersion(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	/* WiFI IPAddress */
 	void getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 
