@@ -496,15 +496,12 @@ void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 		_ports += _reqPckt->params[0].param[i];
 	}
 	_port = _ports.toInt();
-	//getParam(&_reqPckt->params[0], (uint8_t*)_port);
 
 	//retrieve sockets number
 	_socks = (int)_reqPckt->params[1].param[0];
-	//getParam(&_reqPckt->params[1], (uint8_t*)_socks);
 
 	//retrieve protocol mode (TCP/UDP)
 	_prot_mode = (uint8_t)_reqPckt->params[2].param[0];
-	//getParam(&_reqPckt->params[2], &_prot_mode);
 
 	delete _wifi_server;
 	_wifi_server = new WiFiServer(_port);
