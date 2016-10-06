@@ -7,10 +7,15 @@
 
 char FW_VERSION[] = "0.0.1";
 
-WiFiServer* _wifi_server;
+//WiFiServer* _wifi_server;
 
 //cached values
 IPAddress _reqHostIp;
+
+//WiFiServer and WiFiClient map
+//void* mapWiFiTcp[MAX_SOCK_NUM][MAX_MODE_NUM];
+WiFiServer* mapServers[MAX_SOCK_NUM];
+WiFiClient* mapClients[MAX_SOCK_NUM];
 
 CommLgc::CommLgc(){
 	//while(!CommunicationInterface.begin());
@@ -106,7 +111,7 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_DATA_TCP_CMD:					break;
 			case START_CLIENT_TCP_CMD:			break;
 			case STOP_CLIENT_TCP_CMD:				break;
-			case GET_CLIENT_STATE_TCP_CMD:	break;
+			case GET_CLIENT_STATE_TCP_CMD:	clientStatus(_reqPckt, _resPckt);	break;
 			case DISCONNECT_CMD:				disconnect(_reqPckt, _resPckt);				break;
 			case GET_IDX_RSSI_CMD:			getRSSI(_reqPckt, _resPckt, 0);				break;
 			case GET_IDX_ENCT_CMD:			getEncryption(_reqPckt, _resPckt, 0);	break;
@@ -403,7 +408,6 @@ void CommLgc::config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 }
 
-
 void CommLgc::reqHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
 	char* host;
@@ -487,27 +491,32 @@ void CommLgc::getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO: To be tested
 	int _port = 0;
-	int _socks = 0;
-	uint8_t _prot_mode = 0;
+	int _sock = 0;
+	uint8_t _prot = 0;
 
-	String _ports;
+	String _port_str;
 	//retrieve the port to start server
 	for(int i=0;  i<(int)_reqPckt->params[0].paramLen; i++){
-		_ports += _reqPckt->params[0].param[i];
+		_port_str += _reqPckt->params[0].param[i];
 	}
-	_port = _ports.toInt();
+	_port = _port_str.toInt();
 
 	//retrieve sockets number
-	_socks = (int)_reqPckt->params[1].param[0];
+	_sock = (int)_reqPckt->params[1].param[0];
 
 	//retrieve protocol mode (TCP/UDP)
-	_prot_mode = (uint8_t)_reqPckt->params[2].param[0];
+	_prot = (uint8_t)_reqPckt->params[2].param[0];
 
-	delete _wifi_server;
-	_wifi_server = new WiFiServer(_port);
-	_wifi_server->begin();
+	// delete _wifi_server;
+	// _wifi_server = new WiFiServer(_port);
+	// _wifi_server->begin();
 
-	//TODO sockets and protocol
+	//WiFiServer wifiserver(_port);
+	mapServers[_sock] = new WiFiServer(_port);
+	mapServers[_sock]->begin();
+
+	Serial1.print("BEGIN SERVER SOCK: ");
+	Serial1.print(_sock);
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -519,30 +528,22 @@ void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-	//TODO
+	//TODO --> maybe it's uncessary
 }
 
 void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO: To be tested
 	uint8_t result = 0;
-	uint8_t _socket = 0;
+	uint8_t _sock = 0;
 
 	//retrieve socket index
-	_socket = (uint8_t)_reqPckt->params[0].param[0];
+	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
-	//NOTE =0 is the case of a direct call to WiFiServer.status();
-	if(_socket == 0){
-		if(_wifi_server != NULL){
-			result = _wifi_server->status();
-		} else { //wifi server is not started
-			result = 0; //TODO take a look and understand the correct value for this case
-		}
-
-	}
-	//NOTE >0 are the cases of a non-direct calls, like WiFiServer.available();
-	else {
-		//TODO ???
-	}
+	result = mapServers[_sock]->status();
+	Serial1.print("STATUS SERVER SOCK: ");
+	Serial1.print(_sock);
+	Serial.print(" -> ");
+	Serial.println(result);
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -561,26 +562,20 @@ void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-	//TODO
 	uint8_t result = 0;
-	uint8_t _socket = 0; //socket index
+	uint8_t _sock = 0; //socket index
 
-	// //retrieve socket index
-	// _socket = (uint8_t)_reqPckt->params[0].param[0];
-	//
-	// //NOTE =0 is the case of a direct call to WiFiClient.status();
-	// if(_socket == 0){
-	// 	if(/*_wifi_server*/ != NULL){
-	// 		result = /*_wifi_server->status()*/;
-	// 	} else { //wifi server is not started
-	// 		result = 0; //TODO take a look and understand the correct value for this case
-	// 	}
-	//
-	// }
-	// //NOTE >0 are the cases of a non-direct calls, like WiFiServer.available();
-	// else {
-	// 	//TODO ???
-	// }
+	_sock = (uint8_t)_reqPckt->params[0].param[0];
+
+	if(mapClients[_sock] == NULL)
+		mapClients[_sock] = new WiFiClient();
+
+	result = mapClients[_sock]->status();
+
+	Serial1.print("STATUS CLIENT SOCK: ");
+	Serial1.print(_sock);
+	Serial.print(" -> ");
+	Serial.println(result);
 
 	//set the response struct
 	_resPckt->nParam = 1;

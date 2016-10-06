@@ -66,7 +66,7 @@ void loop() {
 			 //command(ECRY);
 			 //command(RSSI);
 
-			 command(SSID);
+			 //command(SSID);
 			 //command(RSSI_idx);
 			 //command(MAC_ADDR);
 			 //command(DISCONNECT);
@@ -80,11 +80,11 @@ void loop() {
 			 //command(CONFIG_1); // send ip, gateway and subnet
 			 //command(CONFIG_2); // send ip, gateway, subnet and primary dns
 			 //command(CONFIG_3);	// send ip, gateway, subnet, primary dns and secondary dns
-			 //command(START_SERVER);
-			 //command(SERVER_STATUS);
+			 command(START_SERVER);
+			 command(SERVER_STATUS);
 			 //command(REQ_HOST);
 			 //command(GET_HOST);
-			 command(GET_FW_VER);
+			 //command(GET_FW_VER);
 
 			 prova = readStringUntil(0xEE);
 			 Serial.print("cmd: ");

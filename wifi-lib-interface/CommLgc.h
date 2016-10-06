@@ -5,6 +5,9 @@
 #ifndef H_COMM_LGC_H
 #define H_COMM_LGC_H
 
+#define MAX_MODE_NUM 2
+#define MAP_TCP_MODE 1
+
 class CommLgc {
 
 public:
