@@ -1,21 +1,21 @@
 //Communication Interface
 #include "CommLgc.h"
 #include "CommCmd.h"
-#include <ESP8266WiFi.h>
-#include <ESP8266WiFiScan.h>
-#include "utility/wifi_utils.h"
+
 
 char FW_VERSION[] = "0.0.1";
+WiFiServer* wifiserver;
 
-//WiFiServer* _wifi_server;
 
 //cached values
 IPAddress _reqHostIp;
 
-//WiFiServer and WiFiClient map
-//void* mapWiFiTcp[MAX_SOCK_NUM][MAX_MODE_NUM];
+//WiFiServer and WiFiClient / UDP map
 WiFiServer* mapServers[MAX_SOCK_NUM];
-WiFiClient* mapClients[MAX_SOCK_NUM];
+WiFiClient mapClients[MAX_SOCK_NUM];
+//WiFiUDP* mapClientsUDP[MAX_SOCK_NUM];
+
+WiFiClient client;
 
 CommLgc::CommLgc(){
 	//while(!CommunicationInterface.begin());
@@ -36,24 +36,38 @@ void CommLgc::handle(){
 	tMsgPacket *resPckt = &pckt2;
 
 	if( CommunicationInterface.read(reqPckt) == 0){
-		Serial1.println("==== RECEIVED ====");
-		DEBUG(reqPckt);
-		Serial1.println("==================");
-		process(reqPckt, resPckt);
-		Serial1.println("=== TRANSMITTED ==");
-		DEBUG(resPckt);
-		Serial1.println("==================");
+		// if(debug){
+		// 	Serial1.println("==== RECEIVED ====");
+		//DEBUG(reqPckt);
+		// 	Serial1.println("==================");
+		 	process(reqPckt, resPckt);
+		// 	Serial1.println("=== TRANSMITTED ==");
+		// 	DEBUG(resPckt);
+		// 	Serial1.println("==================");
+		// }
 		CommunicationInterface.write(resPckt);
+		//Free momory
 		freeMem(reqPckt);
 		freeMem(resPckt);
-		//TODO: free memory
+		//DEBUG_MEM();
 	}
 }
 
 void CommLgc::freeMem(tMsgPacket *_pckt){
+	if(_pckt->tcmd >= 0x40 && _pckt->tcmd < 0x50){ //16 Bit
+		for(int i=0; i<_pckt->nParam; i++)
+			free(_pckt->paramsData[i].data);
+	}
+	else{ //8 Bit
+		for(int i=0; i<_pckt->nParam; i++)
+			free(_pckt->params[i].param);
+	}
+}
 
-	for(int i=0; i<_pckt->nParam; i++)
-		free(_pckt->params[i].param);
+void CommLgc::DEBUG_MEM() {
+	Serial1.print("-- Free Memory: ");
+	Serial1.print(ESP.getFreeHeap());
+	Serial1.println(" --");
 }
 
 void CommLgc::DEBUG(tMsgPacket *_pckt) {
@@ -64,15 +78,15 @@ void CommLgc::DEBUG(tMsgPacket *_pckt) {
 	Serial1.println(_pckt->nParam, HEX);
 	for(int i=0; i<(int)_pckt->nParam; i++){
 		Serial1.println(_pckt->params[i].paramLen, HEX );
-		for(int j=0; j< (int)_pckt->params[i].paramLen; j++)
-			Serial1.println( _pckt->params[i].param[j], HEX);
+		if(_pckt->tcmd >= 0x40 && _pckt->tcmd < 0x50) //16 Bit
+			for(int j=0; j< (int)_pckt->paramsData[i].dataLen; j++)
+				Serial1.println( _pckt->paramsData[i].data[j], HEX);
+		else //8 Bit
+			for(int j=0; j< (int)_pckt->params[i].paramLen; j++)
+				Serial1.println( _pckt->params[i].param[j], HEX);
 	}
 	Serial1.println(0xEE, HEX);
 	Serial1.println("--- End Packet ---");
-
-	Serial1.println("-- Free Memory ---");
-	Serial1.println(ESP.getFreeHeap());
-	Serial1.println("-----------------");
 }
 
 void CommLgc::createErrorResponse(tMsgPacket *_pckt){
@@ -91,37 +105,36 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 		_resPckt->tcmd = _reqPckt->tcmd | REPLY_FLAG;
 
 		switch(_reqPckt->tcmd){
-
-			case SET_NET_CMD:						begin(_reqPckt, _resPckt, 0);			break;
-			case SET_PASSPHRASE_CMD:		begin(_reqPckt, _resPckt, 1);			break;
-			case SET_IP_CONFIG_CMD:			config(_reqPckt, _resPckt);				break;
+			case SET_NET_CMD:						if(debug) Serial1.println("~~~ CMD: SET_NET_CMD ~~~");begin(_reqPckt, _resPckt, 0);			break;
+			case SET_PASSPHRASE_CMD:		if(debug) Serial1.println("~~~ CMD: SET_PASSPHRASE_CMD ~~~");begin(_reqPckt, _resPckt, 1);			break;
+			case SET_IP_CONFIG_CMD:			if(debug) Serial1.println("~~~ CMD: SET_IP_CONFIG_CMD  ~~~");config(_reqPckt, _resPckt);				break;
 			//case SET_DNS_CONFIG_CMD:				break;
-			case GET_CONN_STATUS_CMD:		getStatus(_reqPckt, _resPckt);		break;
-			case GET_IPADDR_CMD:		getNetworkData(_reqPckt, _resPckt);		break;
-			case GET_MACADDR_CMD:		getMacAddress(_reqPckt, _resPckt);		break;
-			case GET_CURR_SSID_CMD: getCurrentSSID(_reqPckt, _resPckt);		break;
-			case GET_CURR_BSSID_CMD:getBSSID(_reqPckt, _resPckt, 1);			break;
-			case GET_CURR_RSSI_CMD:	getRSSI(_reqPckt, _resPckt, 1);				break;
-			case GET_CURR_ENCT_CMD:	getEncryption(_reqPckt, _resPckt, 1);	break;
-			case SCAN_NETWORKS:			scanNetwork(_reqPckt, _resPckt);			break;
-			case START_SERVER_TCP_CMD:	startServer(_reqPckt, _resPckt);	break;
-			case GET_STATE_TCP_CMD:			serverStatus(_reqPckt, _resPckt);	break;
-			case DATA_SENT_TCP_CMD:					break;
-			case AVAIL_DATA_TCP_CMD:				break;
-			case GET_DATA_TCP_CMD:					break;
-			case START_CLIENT_TCP_CMD:			break;
-			case STOP_CLIENT_TCP_CMD:				break;
-			case GET_CLIENT_STATE_TCP_CMD:	clientStatus(_reqPckt, _resPckt);	break;
-			case DISCONNECT_CMD:				disconnect(_reqPckt, _resPckt);				break;
-			case GET_IDX_RSSI_CMD:			getRSSI(_reqPckt, _resPckt, 0);				break;
-			case GET_IDX_ENCT_CMD:			getEncryption(_reqPckt, _resPckt, 0);	break;
-			case REQ_HOST_BY_NAME_CMD:	reqHostByName(_reqPckt, _resPckt);		break;
-			case GET_HOST_BY_NAME_CMD:	getHostByName(_reqPckt, _resPckt);		break;
-			case GET_FW_VERSION_CMD:		getFwVersion(_reqPckt, _resPckt);			break;
-			case START_SCAN_NETWORKS:		startScanNetwork(_reqPckt, _resPckt);	break;
+			case GET_CONN_STATUS_CMD:		if(debug) Serial1.println("~~~ CMD: GET_CONN_STATUS_CMD  ~~~");getStatus(_reqPckt, _resPckt);		break;
+			case GET_IPADDR_CMD:		if(debug) Serial1.println("~~~ CMD: GET_IPADDR_CMD  ~~~");getNetworkData(_reqPckt, _resPckt);		break;
+			case GET_MACADDR_CMD:		if(debug) Serial1.println("~~~ CMD: GET_MACADDR_CMD  ~~~");getMacAddress(_reqPckt, _resPckt);		break;
+			case GET_CURR_SSID_CMD: if(debug) Serial1.println("~~~ CMD: GET_CURR_SSID_CMD  ~~~");getCurrentSSID(_reqPckt, _resPckt);		break;
+			case GET_CURR_BSSID_CMD:if(debug) Serial1.println("~~~ CMD: GET_CURR_RSSI_CMD  ~~~");getBSSID(_reqPckt, _resPckt, 1);			break;
+			case GET_CURR_RSSI_CMD:	if(debug) Serial1.println("~~~ CMD: GET_CURR_ENCT_CMD  ~~~");getRSSI(_reqPckt, _resPckt, 1);				break;
+			case GET_CURR_ENCT_CMD:	if(debug) Serial1.println("~~~ CMD: GET_CURR_ENCT_CMD  ~~~");getEncryption(_reqPckt, _resPckt, 1);	break;
+			case SCAN_NETWORKS:			if(debug) Serial1.println("~~~ CMD: SCAN_NETWORKS  ~~~");scanNetwork(_reqPckt, _resPckt);			break;
+			case START_SERVER_TCP_CMD:	if(debug) Serial1.println("~~~ CMD: START_SERVER_TCP_CMD  ~~~");startServer(_reqPckt, _resPckt);	break;
+			case GET_STATE_TCP_CMD:			if(debug) Serial1.println("~~~ CMD: GET_STATE_TCP_CMD  ~~~");serverStatus(_reqPckt, _resPckt);	break;
+			case DATA_SENT_TCP_CMD:			if(debug) Serial1.println("~~~ CMD: DATA_SENT_TCP_CMD  ~~~");checkDataSent(_reqPckt, _resPckt);	break;
+			case AVAIL_DATA_TCP_CMD:		if(debug) Serial1.println("~~~ CMD: AVAIL_DATA_TCP_CMD  ~~~");availData(_reqPckt, _resPckt);		break;
+			case GET_DATA_TCP_CMD:			if(debug) Serial1.println("~~~ CMD: GET_DATA_TCP_CMD  ~~~");getData(_reqPckt, _resPckt);		break;
+			case START_CLIENT_TCP_CMD:	if(debug) Serial1.println("~~~ CMD: START_CLIENT_TCP_CMD  ~~~");startClient(_reqPckt, _resPckt);			break;
+			case STOP_CLIENT_TCP_CMD:		if(debug) Serial1.println("~~~ CMD: STOP_CLIENT_TCP_CMD  ~~~");stopClient(_reqPckt, _resPckt);			break;
+			case GET_CLIENT_STATE_TCP_CMD:	if(debug) Serial1.println("~~~ CMD: GET_CLIENT_STATE_TCP_CMD  ~~~");clientStatus(_reqPckt, _resPckt);	break;
+			case DISCONNECT_CMD:				if(debug) Serial1.println("~~~ CMD: DISCONNECT_CMD  ~~~");disconnect(_reqPckt, _resPckt);				break;
+			case GET_IDX_RSSI_CMD:			if(debug) Serial1.println("~~~ CMD: GET_IDX_RSSI_CMD  ~~~");getRSSI(_reqPckt, _resPckt, 0);				break;
+			case GET_IDX_ENCT_CMD:			if(debug) Serial1.println("~~~ CMD: GET_IDX_ENCT_CMD  ~~~");getEncryption(_reqPckt, _resPckt, 0);	break;
+			case REQ_HOST_BY_NAME_CMD:	if(debug) Serial1.println("~~~ CMD: REQ_HOST_BY_NAME_CMD  ~~~");reqHostByName(_reqPckt, _resPckt);		break;
+			case GET_HOST_BY_NAME_CMD:	if(debug) Serial1.println("~~~ CMD: GET_HOST_BY_NAME_CMD  ~~~");getHostByName(_reqPckt, _resPckt);		break;
+			case GET_FW_VERSION_CMD:		if(debug) Serial1.println("~~~ CMD: GET_FW_VERSION_CMD  ~~~");getFwVersion(_reqPckt, _resPckt);			break;
+			case START_SCAN_NETWORKS:		if(debug) Serial1.println("~~~ CMD: START_SCAN_NETWORKS  ~~~");startScanNetwork(_reqPckt, _resPckt);	break;
 			case SEND_DATA_UDP_CMD:			break;
 			case GET_REMOTE_DATA_CMD:		break;
-			case SEND_DATA_TCP_CMD:			break;
+			case SEND_DATA_TCP_CMD:			if(debug) Serial1.println("~~~ CMD: SEND_DATA_TCP_CMD  ~~~");sendData(_reqPckt, _resPckt);	break;
 			case GET_DATABUF_TCP_CMD:		break;
 			case INSERT_DATABUF_CMD:		break;
 			default:	createErrorResponse(_resPckt); break;
@@ -489,17 +502,16 @@ void CommLgc::getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 /* WiFI Server */
 void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+Serial1.println("[[[[[[[SERVER START]]]]]]]");
 	//TODO: To be tested
-	int _port = 0;
+	uint16_t _port = 0;
 	int _sock = 0;
 	uint8_t _prot = 0;
 
-	String _port_str;
 	//retrieve the port to start server
-	for(int i=0;  i<(int)_reqPckt->params[0].paramLen; i++){
-		_port_str += _reqPckt->params[0].param[i];
-	}
-	_port = _port_str.toInt();
+	uint8_t _p1 = (uint8_t)_reqPckt->params[0].param[0];
+	uint8_t _p2 = (uint8_t)_reqPckt->params[0].param[1];
+	_port = (_p1 << 8) + _p2;
 
 	//retrieve sockets number
 	_sock = (int)_reqPckt->params[1].param[0];
@@ -507,16 +519,13 @@ void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//retrieve protocol mode (TCP/UDP)
 	_prot = (uint8_t)_reqPckt->params[2].param[0];
 
-	// delete _wifi_server;
-	// _wifi_server = new WiFiServer(_port);
-	// _wifi_server->begin();
+	//wifiserver(_port);
+	//mapServers[_sock] = new WiFiServer(_port);
+	////wifiserver.begin();
+	//mapServers[_sock]->begin();
 
-	//WiFiServer wifiserver(_port);
-	mapServers[_sock] = new WiFiServer(_port);
-	mapServers[_sock]->begin();
-
-	Serial1.print("BEGIN SERVER SOCK: ");
-	Serial1.print(_sock);
+	wifiserver = new WiFiServer(_port);
+	wifiserver->begin();
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -526,12 +535,34 @@ void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 }
 
-void CommLgc::available(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+void CommLgc::availData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-	//TODO --> maybe it's uncessary
+	int result = 0;
+	uint8_t _sock = 0;
+
+	//retrieve socket index
+	_sock = (uint8_t)_reqPckt->params[0].param[0];
+
+	if(mapClients[_sock] != NULL ){
+		result = mapClients[_sock].available();
+	}
+//	result = client.available();
+	//Serial1.println(result);
+	//	else if(mapClientsUDP[_sock] != NULL){
+		//TODO
+		//	}
+
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;//sizeof(result);//2; //TODO: try to get it dinamcally from result
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = '1';
+	//memcpy(&_resPckt->params[0].param, (char*)&result, sizeof(result));
+
 }
 
 void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//Serial1.println("[[[[[[[SERVER STATUS]]]]]]]");
 	//TODO: To be tested
 	uint8_t result = 0;
 	uint8_t _sock = 0;
@@ -539,11 +570,8 @@ void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
-	result = mapServers[_sock]->status();
-	Serial1.print("STATUS SERVER SOCK: ");
-	Serial1.print(_sock);
-	Serial.print(" -> ");
-	Serial.println(result);
+	//result = mapServers[_sock]->status();
+	result = wifiserver->status();
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -553,29 +581,92 @@ void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 }
 
+void CommLgc::getData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	int result = 0;
+	uint8_t _sock = 0;
+	uint8_t _peek = 0;
+
+	//retrieve socket index
+	_sock = (uint8_t)_reqPckt->params[0].param[0];
+
+	//retrieve peek
+	_peek = (uint8_t)_reqPckt->params[1].param[0];
+
+//client = wifiserver->available();
+
+if(mapClients[_sock] != NULL )
+	//if(client != NULL ){
+		if(_peek > 0)
+			result = mapClients[_sock].peek();
+//			result = client.peek();
+		else{
+			result = mapClients[_sock].read();
+			//result = client.read();
+			Serial1.print("[[[[READ");Serial1.println(result);
+		}
+
+	//else if(mapClientsUDP[_sock] != NULL){
+		//TODO
+	//}
+
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
+
+}
 
 /* WiFi Client */
 void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	Serial1.println("[[[[[[[CLIENT STOP]]]]]]]");
 	//TODO to be tested
-	//TODO
+	uint8_t _sock = 0;
+
+	_sock = (uint8_t)_reqPckt->params[0].param[0];
+
+	if(mapClients[_sock] != NULL ){
+		Serial1.println("[[[STOP]]]");
+		mapClients[_sock].stop();
+	}
+//client.stop();
+	//else if(mapClientsUDP[_sock] != NULL){
+		//TODO
+	//}
+
+
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = 1; //NOTE send 1 statically because .stop is a void function
+
 }
 
 void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+//Serial1.println("[[[[[[[CLIENT STATUS]]]]]]]");
 	//TODO to be tested
 	uint8_t result = 0;
 	uint8_t _sock = 0; //socket index
 
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
-	if(mapClients[_sock] == NULL)
-		mapClients[_sock] = new WiFiClient();
+	if(mapClients[_sock] == NULL){
+		//Serial1.println("NUOVO CLIENT");
+		//mapClients[_sock] = new WiFiClient();
+		//mapClients[_sock] = WiFiClient(wifiserver->available());
+		mapClients[_sock] = wifiserver->available();
+	}else {
+		//Serial1.println(" CLIENT ESISTENTE");
+	}
+	result = mapClients[_sock].status();
 
-	result = mapClients[_sock]->status();
-
-	Serial1.print("STATUS CLIENT SOCK: ");
-	Serial1.print(_sock);
-	Serial.print(" -> ");
-	Serial.println(result);
+	//if(!client){
+		//client = wifiserver->available();
+	//}
+	//client = wifiserver->available();
+	//result = client.status();
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -585,9 +676,84 @@ void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 }
 
+void CommLgc::sendData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+Serial1.println("SEND DATA");
+	int result = 0;
+	uint8_t* _data;
+	uint8_t _sock = 0; //socket index
+
+	//retrieve socket index and data
+	_sock = (uint8_t)_reqPckt->paramsData[0].data[0];
+	_data = (uint8_t*)_reqPckt->paramsData[1].data;
+	Serial1.println(_reqPckt->paramsData[1].data);
+
+	if(mapClients[_sock] != NULL){
+		result = mapClients[_sock].write(_data, sizeof(_data));
+		Serial1.println(result);
+	}
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = (result > 0) ? 1 : 0;
+}
+
+void CommLgc::checkDataSent(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+
+	//TODO: fake at moment
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = 1;
+}
+
 void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-	//TODO
+	/*
+
+	int result = 0;
+
+	//retrieve the IP address to connect to
+	uint8_t stip1 = _reqPckt->params[0].param[0];
+	uint8_t stip2 = _reqPckt->params[0].param[1];
+	uint8_t stip3 = _reqPckt->params[0].param[2];
+	uint8_t stip4 = _reqPckt->params[0].param[3];
+	//IPAddress _ip = new IPAddress(stip1, stip2, stip3, stip4);
+	IPAddress _ip(stip1, stip2, stip3, stip4);
+
+	//retrieve the port to connect to
+	String _port_str;
+	for(int i=0;  i<(int)_reqPckt->params[1].paramLen; i++){
+		_port_str += _reqPckt->params[1].param[i];
+	}
+	int _port = _port_str.toInt();
+
+	//retrieve sockets number
+	int _sock = (int)_reqPckt->params[2].param[0];
+
+	//retrieve protocol mode (TCP/UDP)
+	uint8_t _prot = (uint8_t)_reqPckt->params[3].param[0];
+
+	if(_prot == 0){ //TCP MODE
+		result = mapClients[_sock].connect(_ip, _port);
+
+	} else { //UDP MODE
+		//TODO
+		//WiFiUDP client = mapClientsUDP[_sock];
+	}
+
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
+
+
+*/
+
 }
 
 

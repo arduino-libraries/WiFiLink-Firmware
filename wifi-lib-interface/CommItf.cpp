@@ -24,7 +24,7 @@ CommItf::CommItf(){
 	//TODO: MCU selection by compiler flags
 
 	//TEST
-	 McuType = AVR328P;
+	 McuType = STM32;
 
 	 switch(int(McuType)){
 	 	case AVR328P:
@@ -79,36 +79,47 @@ int CommItf::createPacketFromSerial(tMsgPacket *_pckt){
 		String raw_pckt = readStringUntil(END_CMD);
 
 		int idx = 0;
-		unsigned char tmp = raw_pckt[idx];
+		unsigned char tmp;
 
 		//Start Command
-		if(tmp != START_CMD){
+		if(raw_pckt[idx] != START_CMD){
 			//Error
 			return -1;
 		}
-		_pckt->cmd = tmp;
+			_pckt->cmd = raw_pckt[idx];;
 
-		//The command
-		tmp = raw_pckt[++idx];
-		_pckt->tcmd = tmp;
+			//The command
+			_pckt->tcmd = raw_pckt[++idx];
 
-		//The number of parameters for the command
-		tmp = raw_pckt[++idx];
-		_pckt->nParam = tmp;
-
-		//Get each parameter
-		for(int a=0; a<(int)_pckt->nParam; a++){
-			//Length of the parameter
+			//The number of parameters for the command
 			tmp = raw_pckt[++idx];
-			_pckt->params[a].paramLen = tmp;
+			_pckt->nParam = tmp;
 
-			_pckt->params[a].param = (char*)malloc(_pckt->params[a].paramLen);
-			//Value of the parameter
-			for(int b=0; b<(int)_pckt->params[a].paramLen; b++){
-				tmp = raw_pckt[++idx];
-				_pckt->params[a].param[b] = (char)tmp;
+			//Get each parameter
+			for(int a=0; a<(int)_pckt->nParam; a++){
+				//Length of the parameter
+				if( _pckt->tcmd >= 0x40 && _pckt->tcmd < 0x50 ){ //16bit tParam
+					tmp = (uint16_t)( (raw_pckt[++idx] << 8 ) + (uint8_t)raw_pckt[++idx]);
+					_pckt->paramsData[a].dataLen = tmp;
+
+					_pckt->paramsData[a].data = (char*)malloc(_pckt->paramsData[a].dataLen);
+					//Value of the parameter
+					for(int b=0; b<(int)_pckt->paramsData[a].dataLen; b++){
+						tmp = raw_pckt[++idx];
+						_pckt->paramsData[a].data[b] = (char)tmp;
+					}
+				}else{ //8bit tParamData
+					tmp = raw_pckt[++idx];
+					_pckt->params[a].paramLen = tmp;
+
+					_pckt->params[a].param = (char*)malloc(_pckt->params[a].paramLen);
+					//Value of the parameter
+					for(int b=0; b<(int)_pckt->params[a].paramLen; b++){
+						tmp = raw_pckt[++idx];
+						_pckt->params[a].param[b] = (char)tmp;
+					}
+				}
 			}
-		}
 		//OK
 		return 0;
 

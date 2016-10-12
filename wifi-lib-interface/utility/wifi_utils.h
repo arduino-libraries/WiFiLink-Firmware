@@ -131,11 +131,11 @@ typedef struct  __attribute__((__packed__))
 
 typedef struct  __attribute__((__packed__))
 {
-	String test;
 	unsigned char	cmd;
 	unsigned char	tcmd;
 	unsigned char	nParam;
 	tParam	params[MAX_PARAMS];
+	tDataParam	paramsData[MAX_PARAMS];
 }	tMsgPacket;//tSpiMsg;
 
 typedef struct  __attribute__((__packed__))
