@@ -603,7 +603,7 @@ if(mapClients[_sock] != NULL )
 		else{
 			result = mapClients[_sock].read();
 			//result = client.read();
-			Serial1.print("[[[[READ");Serial1.println(result);
+			//Serial1.print("[[[[READ");Serial1.println(result);
 		}
 
 	//else if(mapClientsUDP[_sock] != NULL){
@@ -678,19 +678,18 @@ void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::sendData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-Serial1.println("SEND DATA");
+
 	int result = 0;
 	uint8_t* _data;
 	uint8_t _sock = 0; //socket index
 
 	//retrieve socket index and data
 	_sock = (uint8_t)_reqPckt->paramsData[0].data[0];
-	_data = (uint8_t*)_reqPckt->paramsData[1].data;
-	Serial1.println(_reqPckt->paramsData[1].data);
 
 	if(mapClients[_sock] != NULL){
-		result = mapClients[_sock].write(_data, sizeof(_data));
-		Serial1.println(result);
+		//send data to client
+		result = mapClients[_sock].write(_reqPckt->paramsData[1].data, _reqPckt->paramsData[1].dataLen);
+
 	}
 	//set the response struct
 	_resPckt->nParam = 1;
