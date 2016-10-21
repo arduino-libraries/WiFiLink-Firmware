@@ -442,12 +442,15 @@ void CommLgc::setDNS(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::reqHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-	char* host;
+	char host[_reqPckt->params[0].paramLen];
 	int result;
 
-	host = _reqPckt->params[0].param; //get the host name to look up
-	result = WiFi.hostByName(host, _reqHostIp); //retrieve the ip address of the host
+	//get the host name to look up
+	strncpy(host, _reqPckt->params[0].param, _reqPckt->params[0].paramLen);
+	host[_reqPckt->params[0].paramLen] = '\0';
 
+	result = WiFi.hostByName(host, _reqHostIp); //retrieve the ip address of the host
+		
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
