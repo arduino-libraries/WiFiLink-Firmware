@@ -271,15 +271,21 @@ void CommLgc::begin(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t idx){
 
 	if(idx == 0){ // idx==0 - SET_NET_CMD
 			//retrieve parameters
-			char* ssid = _reqPckt->params[0].param;
+			char ssid[_reqPckt->params[0].paramLen+1];
+			strncpy(ssid, _reqPckt->params[0].param, _reqPckt->params[0].paramLen);
+			ssid[_reqPckt->params[0].paramLen] = '\0';
 
 			//set network and retrieve result
 			result = WiFi.begin(ssid);
 		}
 	else{ // idx ==1 - SET_PASSPHRASE_CMD
 			//retrieve parameters
-			char* ssid = _reqPckt->params[0].param;
-			char* pass = _reqPckt->params[1].param;
+			char ssid[_reqPckt->params[0].paramLen+1];
+			char pass[_reqPckt->params[1].paramLen+1];
+			strncpy(ssid, _reqPckt->params[0].param, _reqPckt->params[0].paramLen);
+			strncpy(pass, _reqPckt->params[1].param, _reqPckt->params[1].paramLen);
+			ssid[_reqPckt->params[0].paramLen] = '\0';
+			pass[_reqPckt->params[1].paramLen] = '\0';
 
 			//set network and retrieve result
 			result = WiFi.begin(ssid, pass);
