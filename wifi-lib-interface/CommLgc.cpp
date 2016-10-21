@@ -2,10 +2,7 @@
 #include "CommLgc.h"
 #include "CommCmd.h"
 
-
 char FW_VERSION[] = "0.0.1";
-WiFiServer* wifiserver;
-
 
 //cached values
 IPAddress _reqHostIp;
@@ -13,6 +10,8 @@ IPAddress _reqHostIp;
 IPAddress* _handyIp;
 IPAddress* _handySubnet;
 IPAddress* _handyGateway;
+
+uint8_t tcpResult = 0;
 
 //WiFiServer and WiFiClient / UDP map
 WiFiServer* mapServers[MAX_SOCK_NUM];
@@ -523,8 +522,8 @@ void CommLgc::getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 /* WiFI Server */
 void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-Serial1.println("[[[[[[[SERVER START]]]]]]]");
 	//TODO: To be tested
+	uint8_t result = 0;
 	uint16_t _port = 0;
 	int _sock = 0;
 	uint8_t _prot = 0;
@@ -540,19 +539,20 @@ Serial1.println("[[[[[[[SERVER START]]]]]]]");
 	//retrieve protocol mode (TCP/UDP)
 	_prot = (uint8_t)_reqPckt->params[2].param[0];
 
-	//wifiserver(_port);
-	//mapServers[_sock] = new WiFiServer(_port);
-	////wifiserver.begin();
-	//mapServers[_sock]->begin();
+	if(mapServers[_sock] != NULL ){
+		mapServers[_sock]->stop();
+		mapServers[_sock]->close();
+		free(mapServers[_sock]);
+	}
 
-	wifiserver = new WiFiServer(_port);
-	wifiserver->begin();
+	mapServers[_sock] = new WiFiServer(_port);
+	mapServers[_sock]->begin();
 
 	//set the response struct
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = 1;
+	_resPckt->params[0].param[0] = 1; //fake data returned
 
 }
 
@@ -588,8 +588,7 @@ void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
-	//result = mapServers[_sock]->status();
-	result = wifiserver->status();
+	result = mapServers[_sock]->status();
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -663,7 +662,7 @@ void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
 	if(mapClients[_sock] == NULL){
-		mapClients[_sock] = wifiserver->available();
+		mapClients[_sock] = mapServers[_sock]->available();
 	}else {
 
 	}
@@ -691,24 +690,26 @@ void CommLgc::sendData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	if(mapClients[_sock] != NULL){
 		//send data to client
 		result = mapClients[_sock].write(_reqPckt->paramsData[1].data, _reqPckt->paramsData[1].dataLen);
-
+		if(result == _reqPckt->paramsData[1].dataLen)
+			tcpResult = 1;
+		else
+			tcpResult = 0;
 	}
 	//set the response struct
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = (result > 0) ? 1 : 0;
+	_resPckt->params[0].param[0] = tcpResult;//(result > 0) ? 1 : 0;
 }
 
 void CommLgc::checkDataSent(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
 
-	//TODO: fake at moment
 	//set the response struct
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = 1;
+	_resPckt->params[0].param[0] = tcpResult; //(tcpResult > 0) ? 1 : 0;
 }
 
 void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
