@@ -42,6 +42,7 @@ private:
 	void scanNetwork(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getBSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t current);
 	void config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void setDNS(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void reqHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getFwVersion(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);

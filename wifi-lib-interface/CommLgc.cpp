@@ -10,6 +10,10 @@ WiFiServer* wifiserver;
 //cached values
 IPAddress _reqHostIp;
 
+IPAddress* _handyIp;
+IPAddress* _handySubnet;
+IPAddress* _handyGateway;
+
 //WiFiServer and WiFiClient / UDP map
 WiFiServer* mapServers[MAX_SOCK_NUM];
 WiFiClient mapClients[MAX_SOCK_NUM];
@@ -108,7 +112,7 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case SET_NET_CMD:						if(debug) Serial1.println("~~~ CMD: SET_NET_CMD ~~~");begin(_reqPckt, _resPckt, 0);			break;
 			case SET_PASSPHRASE_CMD:		if(debug) Serial1.println("~~~ CMD: SET_PASSPHRASE_CMD ~~~");begin(_reqPckt, _resPckt, 1);			break;
 			case SET_IP_CONFIG_CMD:			if(debug) Serial1.println("~~~ CMD: SET_IP_CONFIG_CMD  ~~~");config(_reqPckt, _resPckt);				break;
-			//case SET_DNS_CONFIG_CMD:				break;
+			case SET_DNS_CONFIG_CMD:		if(debug) Serial1.println("~~~ CMD: SET_DNS_CONFIG_CMD  ~~~");setDNS(_reqPckt, _resPckt);				break;
 			case GET_CONN_STATUS_CMD:		if(debug) Serial1.println("~~~ CMD: GET_CONN_STATUS_CMD  ~~~");getStatus(_reqPckt, _resPckt);		break;
 			case GET_IPADDR_CMD:		if(debug) Serial1.println("~~~ CMD: GET_IPADDR_CMD  ~~~");getNetworkData(_reqPckt, _resPckt);		break;
 			case GET_MACADDR_CMD:		if(debug) Serial1.println("~~~ CMD: GET_MACADDR_CMD  ~~~");getMacAddress(_reqPckt, _resPckt);		break;
@@ -367,64 +371,74 @@ void CommLgc::config(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	//TODO: To be tested
 	bool result;
+	uint8_t validParams = 0;
+
+	uint8_t stip0, stip1, stip2, stip3,
+					gwip0, gwip1, gwip2, gwip3,
+					snip0, snip1, snip2, snip3;
+
+	validParams = _reqPckt->params[0].param[0];
 
 	//retrieve the static IP address
-	uint8_t stip1 = _reqPckt->params[0].param[0];
-	uint8_t stip2 = _reqPckt->params[0].param[1];
-	uint8_t stip3 = _reqPckt->params[0].param[2];
-	uint8_t stip4 = _reqPckt->params[0].param[3];
-	IPAddress staticIP(stip1, stip2, stip3, stip4);
+	stip0 = _reqPckt->params[1].param[0];
+	stip1 = _reqPckt->params[1].param[1];
+	stip2 = _reqPckt->params[1].param[2];
+	stip3 = _reqPckt->params[1].param[3];
+	_handyIp = new IPAddress(stip0, stip1, stip2, stip3);
+
 
 	//retrieve the gateway IP address
-	uint8_t gwip1 = _reqPckt->params[1].param[0];
-	uint8_t gwip2 = _reqPckt->params[1].param[1];
-	uint8_t gwip3 = _reqPckt->params[1].param[2];
-	uint8_t gwip4 = _reqPckt->params[1].param[3];
-	IPAddress gateway(gwip1, gwip2, gwip3, gwip4);
+	gwip0 = _reqPckt->params[2].param[0];
+	gwip1 = _reqPckt->params[2].param[1];
+	gwip2 = _reqPckt->params[2].param[2];
+	gwip3 = _reqPckt->params[2].param[3];
+	_handyGateway = new IPAddress(gwip0, gwip1, gwip2, gwip3);
 
 	//retrieve the subnet mask
-	uint8_t snip1 = _reqPckt->params[2].param[0];
-	uint8_t snip2 = _reqPckt->params[2].param[1];
-	uint8_t snip3 = _reqPckt->params[2].param[2];
-	uint8_t snip4 = _reqPckt->params[2].param[3];
-	IPAddress subnet(snip1, snip2, snip3, snip4);
+	snip0 = _reqPckt->params[3].param[0];
+	snip1 = _reqPckt->params[3].param[1];
+	snip2 = _reqPckt->params[3].param[2];
+	snip3 = _reqPckt->params[3].param[3];
+	_handySubnet = new IPAddress(snip0, snip1, snip2, snip3);
 
-	if(_reqPckt->nParam == 3){
-		result = WiFi.config(staticIP, gateway, subnet);
-	}
-	else if(_reqPckt->nParam == 4){
-		//retrieve the dns 1 address
-		uint8_t dns1ip1 = _reqPckt->params[3].param[0];
-		uint8_t dns1ip2 = _reqPckt->params[3].param[1];
-		uint8_t dns1ip3 = _reqPckt->params[3].param[2];
-		uint8_t dns1ip4 = _reqPckt->params[3].param[3];
-		IPAddress dns1(dns1ip1, dns1ip2, dns1ip3, dns1ip4);
-
-		result = WiFi.config(staticIP, gateway, subnet, dns1);
-	}
-	else if(_reqPckt->nParam == 5){
-		//retrieve the dns 1 address
-		uint8_t dns1ip1 = _reqPckt->params[3].param[0];
-		uint8_t dns1ip2 = _reqPckt->params[3].param[1];
-		uint8_t dns1ip3 = _reqPckt->params[3].param[2];
-		uint8_t dns1ip4 = _reqPckt->params[3].param[3];
-		IPAddress dns1(dns1ip1, dns1ip2, dns1ip3, dns1ip4);
-
-		//retrieve the dns 2 address
-		uint8_t dns2ip1 = _reqPckt->params[4].param[0];
-		uint8_t dns2ip2 = _reqPckt->params[4].param[1];
-		uint8_t dns2ip3 = _reqPckt->params[4].param[2];
-		uint8_t dns2ip4 = _reqPckt->params[4].param[3];
-		IPAddress dns2(dns2ip1, dns2ip2, dns2ip3, dns2ip4);
-
-		result = WiFi.config(staticIP, gateway, subnet, dns1, dns2);
-	}
+	result = WiFi.config(*_handyIp, *_handyGateway, *_handySubnet);
 
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
 
+}
+
+void CommLgc::setDNS(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	bool result;
+	uint8_t validParams = 0;
+
+	validParams = _reqPckt->params[0].param[0];
+
+	uint8_t dns1ip0, dns1ip1, dns1ip2, dns1ip3,
+					dns2ip0, dns2ip1, dns2ip2, dns2ip3;
+
+	dns1ip0 = _reqPckt->params[1].param[0];
+	dns1ip1 = _reqPckt->params[1].param[1];
+	dns1ip2 = _reqPckt->params[1].param[2];
+	dns1ip3 = _reqPckt->params[1].param[3];
+	IPAddress dns1(dns1ip0, dns1ip1, dns1ip2, dns1ip3);
+
+	//retrieve the dns 2 address
+	dns2ip0 = _reqPckt->params[2].param[0];
+	dns2ip1 = _reqPckt->params[2].param[1];
+	dns2ip2 = _reqPckt->params[2].param[2];
+	dns2ip3 = _reqPckt->params[2].param[3];
+	IPAddress dns2(dns2ip0, dns2ip1, dns2ip2, dns2ip3);
+
+	result = WiFi.config(*_handyIp, *_handyGateway, *_handySubnet, dns1, dns2);
+
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
 }
 
 void CommLgc::reqHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -473,12 +487,13 @@ void CommLgc::getFwVersion(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 void CommLgc::getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
 
-	IPAddress localIp, subnetMask, gatewayIp, dnsIp;
+	IPAddress localIp, subnetMask, gatewayIp;//, dnsIp1, dnsIp2;
 
 	localIp = WiFi.localIP();
 	subnetMask = WiFi.subnetMask();
 	gatewayIp = WiFi.gatewayIP();
-	//dnsIp = WiFi.dnsIP();
+	// dnsIp1 = WiFi.dnsIP(0); //Ready to have even DNS 1 and DNS 2
+	// dnsIp2 = WiFi.dnsIP(1);
 
 	_resPckt->nParam = 3;
 	_resPckt->params[0].paramLen = 4;
