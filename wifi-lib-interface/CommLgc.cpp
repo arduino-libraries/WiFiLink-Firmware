@@ -231,8 +231,8 @@ void CommLgc::getMacAddress(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].paramLen = paramLen;
 
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	for(int i=0; i<paramLen; i++){
-		_resPckt->params[0].param[i] = mac[i];
+	for (int i=0, j=paramLen-1; i<paramLen, j>=0; i++, j--){
+		_resPckt->params[0].param[i] = mac[j];
 	}
 }
 
@@ -349,8 +349,8 @@ void CommLgc::getBSSID(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t curre
 	_resPckt->params[0].paramLen = paramLen;
 
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	for(int i=0; i<paramLen; i++){
-		_resPckt->params[0].param[i] = result[i];
+	for (int i=0, j=paramLen-1; i<paramLen, j>=0; i++, j--){
+		_resPckt->params[0].param[i] = result[j];
 	}
 }
 
