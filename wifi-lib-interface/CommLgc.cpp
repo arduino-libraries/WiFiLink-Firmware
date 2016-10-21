@@ -567,11 +567,9 @@ void CommLgc::availData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	if(mapClients[_sock] != NULL ){
 		result = mapClients[_sock].available();
 	}
-//	result = client.available();
-	//Serial1.println(result);
 	//	else if(mapClientsUDP[_sock] != NULL){
-		//TODO
-		//	}
+	//TODO
+	//	}
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -583,7 +581,6 @@ void CommLgc::availData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 }
 
 void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-	//Serial1.println("[[[[[[[SERVER STATUS]]]]]]]");
 	//TODO: To be tested
 	uint8_t result = 0;
 	uint8_t _sock = 0;
@@ -614,22 +611,17 @@ void CommLgc::getData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//retrieve peek
 	_peek = (uint8_t)_reqPckt->params[1].param[0];
 
-//client = wifiserver->available();
-
-if(mapClients[_sock] != NULL )
-	//if(client != NULL ){
-		if(_peek > 0)
+	if(mapClients[_sock] != NULL ){
+		if(_peek > 0){
 			result = mapClients[_sock].peek();
-//			result = client.peek();
+		}
 		else{
 			result = mapClients[_sock].read();
-			//result = client.read();
-			//Serial1.print("[[[[READ");Serial1.println(result);
 		}
-
-	//else if(mapClientsUDP[_sock] != NULL){
-		//TODO
-	//}
+	}
+		//else if(mapClientsUDP[_sock] != NULL){
+			//TODO
+		//}
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -641,17 +633,15 @@ if(mapClients[_sock] != NULL )
 
 /* WiFi Client */
 void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-	Serial1.println("[[[[[[[CLIENT STOP]]]]]]]");
+
 	//TODO to be tested
 	uint8_t _sock = 0;
 
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
 	if(mapClients[_sock] != NULL ){
-		Serial1.println("[[[STOP]]]");
 		mapClients[_sock].stop();
 	}
-//client.stop();
 	//else if(mapClientsUDP[_sock] != NULL){
 		//TODO
 	//}
@@ -666,7 +656,6 @@ void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 }
 
 void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-//Serial1.println("[[[[[[[CLIENT STATUS]]]]]]]");
 	//TODO to be tested
 	uint8_t result = 0;
 	uint8_t _sock = 0; //socket index
@@ -674,20 +663,12 @@ void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
 	if(mapClients[_sock] == NULL){
-		//Serial1.println("NUOVO CLIENT");
-		//mapClients[_sock] = new WiFiClient();
-		//mapClients[_sock] = WiFiClient(wifiserver->available());
 		mapClients[_sock] = wifiserver->available();
 	}else {
-		//Serial1.println(" CLIENT ESISTENTE");
+
 	}
 	result = mapClients[_sock].status();
 
-	//if(!client){
-		//client = wifiserver->available();
-	//}
-	//client = wifiserver->available();
-	//result = client.status();
 
 	//set the response struct
 	_resPckt->nParam = 1;
