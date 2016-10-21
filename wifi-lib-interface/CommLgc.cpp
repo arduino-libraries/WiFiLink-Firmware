@@ -80,13 +80,16 @@ void CommLgc::DEBUG(tMsgPacket *_pckt) {
 	Serial1.println(_pckt->tcmd, HEX);
 	Serial1.println(_pckt->nParam, HEX);
 	for(int i=0; i<(int)_pckt->nParam; i++){
-		Serial1.println(_pckt->params[i].paramLen, HEX );
-		if(_pckt->tcmd >= 0x40 && _pckt->tcmd < 0x50) //16 Bit
+		if(_pckt->tcmd >= 0x40 && _pckt->tcmd < 0x50){ //16 Bit
+			Serial1.println(_pckt->paramsData[i].dataLen, HEX );
 			for(int j=0; j< (int)_pckt->paramsData[i].dataLen; j++)
 				Serial1.println( _pckt->paramsData[i].data[j], HEX);
-		else //8 Bit
+		}
+		else{ //8 Bit
+			Serial1.println(_pckt->params[i].paramLen, HEX );
 			for(int j=0; j< (int)_pckt->params[i].paramLen; j++)
 				Serial1.println( _pckt->params[i].param[j], HEX);
+			}
 	}
 	Serial1.println(0xEE, HEX);
 	Serial1.println("--- End Packet ---");
@@ -419,6 +422,7 @@ void CommLgc::setDNS(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	uint8_t dns1ip0, dns1ip1, dns1ip2, dns1ip3,
 					dns2ip0, dns2ip1, dns2ip2, dns2ip3;
 
+	//retrieve the dns 1 address
 	dns1ip0 = _reqPckt->params[1].param[0];
 	dns1ip1 = _reqPckt->params[1].param[1];
 	dns1ip2 = _reqPckt->params[1].param[2];
@@ -450,7 +454,7 @@ void CommLgc::reqHostByName(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	host[_reqPckt->params[0].paramLen] = '\0';
 
 	result = WiFi.hostByName(host, _reqHostIp); //retrieve the ip address of the host
-		
+
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
@@ -561,25 +565,34 @@ void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::availData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-	int result = 0;
+	uint16_t result = 0;
 	uint8_t _sock = 0;
 
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
-
-	if(mapClients[_sock] != NULL ){
-		result = mapClients[_sock].available();
+	if(_sock < MAX_SOCK_NUM){
+		if(mapClients[_sock] != NULL ){
+			result = mapClients[_sock].available();
+		}
+		//	else if(mapClientsUDP[_sock] != NULL){
+		//TODO
+		//	}
 	}
-	//	else if(mapClientsUDP[_sock] != NULL){
-	//TODO
-	//	}
-
 	//set the response struct
 	_resPckt->nParam = 1;
-	_resPckt->params[0].paramLen = 1;//sizeof(result);//2; //TODO: try to get it dinamcally from result
+	_resPckt->params[0].paramLen = sizeof(result);//2; //TODO: try to get it dinamcally from result
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = '1';
-	//memcpy(&_resPckt->params[0].param, (char*)&result, sizeof(result));
+
+	for(int i=0; i<_resPckt->params[0].paramLen; i++){
+	//for(int i=_resPckt->params[0].paramLen-1; i>=0; i--){
+	//for (int i=0, j=_resPckt->params[0].paramLen-1; i<_resPckt->params[0].paramLen, j>=0; i++, j--){
+		_resPckt->params[0].param[i] = ((uint8_t*)&result)[i];
+	}
+	// 	_resPckt->params[0].param[i] = ((uint8_t*)&result)[i];
+	// }
+//_resPckt->params[0].param[0] = '1';
+	//Serial1.println(result);
+
 
 }
 
@@ -637,23 +650,25 @@ void CommLgc::getData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	//TODO to be tested
+	uint8_t result = 0;
 	uint8_t _sock = 0;
 
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
-
-	if(mapClients[_sock] != NULL ){
-		mapClients[_sock].stop();
+	if(_sock < MAX_SOCK_NUM){
+		if(mapClients[_sock] != NULL ){
+			mapClients[_sock].stop();
+			result = 1;
+		}
+		//else if(mapClientsUDP[_sock] != NULL){
+			//TODO
+		//}
 	}
-	//else if(mapClientsUDP[_sock] != NULL){
-		//TODO
-	//}
-
 
 	//set the response struct
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = 1; //NOTE send 1 statically because .stop is a void function
+	_resPckt->params[0].param[0] = result; //NOTE send 1 statically because .stop is a void function
 
 }
 
@@ -682,9 +697,8 @@ void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::sendData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-
+	DEBUG(_reqPckt);
 	int result = 0;
-	uint8_t* _data;
 	uint8_t _sock = 0; //socket index
 
 	//retrieve socket index and data
@@ -703,6 +717,7 @@ void CommLgc::sendData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = tcpResult;//(result > 0) ? 1 : 0;
+	DEBUG(_resPckt);
 }
 
 void CommLgc::checkDataSent(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
