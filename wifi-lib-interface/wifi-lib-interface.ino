@@ -7,18 +7,18 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 
-char ssid[] = "yourSSID";     //  your network SSID (name)
-char pass[] = "yourPassword";
+// char ssid[] = "****";     //  your network SSID (name)
+// char pass[] = "****";
 
 void setup() {
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, pass);
-  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    delay(5000);
-    ESP.restart();
-  }
-	delay(8000);
+  // WiFi.mode(WIFI_STA);
+  // WiFi.begin(ssid, pass);
+  // while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+  //   delay(5000);
+  //   ESP.restart();
+  // }
+	// delay(8000);
   ArduinoOTA.begin();
   //delay(300);
   //CommunicationInterface.begin();
@@ -32,7 +32,7 @@ void loop() {
 //  Serial.println(WiFi.SSID());
   //Serial.println("Prova");
   CommunicationLogic.handle();
-	
+
   //String a = CommunicationInterface.read();
   //if(a!="")
    // CommunicationInterface.write("prova");
