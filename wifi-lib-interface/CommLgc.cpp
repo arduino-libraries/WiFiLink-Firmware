@@ -657,15 +657,15 @@ void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
-	Serial1.print("SOCK: ");Serial1.println(_sock);
+	//Serial1.print("SOCK: ");Serial1.println(_sock);
 	if(_sock < MAX_SOCK_NUM){
-		Serial1.println("STOP CLIENT 1");
+		//Serial1.println("STOP CLIENT 1");
 		if(mapClients[_sock] != NULL ){
-			Serial1.println("STOP CLIENT 2");
+			//Serial1.println("STOP CLIENT 2");
 			mapClients[_sock].stop();
 			result = 1;
 		}
-		Serial1.println("STOP CLIENT 3");
+		//Serial1.println("STOP CLIENT 3");
 		//else if(mapClientsUDP[_sock] != NULL){
 			//TODO
 		//}
@@ -682,20 +682,21 @@ void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-	DEBUG(_reqPckt);
+	//DEBUG(_reqPckt);
 	uint8_t result = 0;
 	uint8_t _sock = 0; //socket index
-
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 	if(_sock < MAX_SOCK_NUM) {
 		if(mapClients[_sock] == NULL){
-			Serial1.println("STATUS CLIENT 1");
-			mapClients[_sock] = mapServers[_sock]->available();
-			Serial1.println("STATUS CLIENT 2");
-			result = mapClients[_sock].status();
-			Serial1.println("STATUS CLIENT 3");
+			//Serial1.println("STATUS CLIENT 1");
+			if(mapServers[_sock] != NULL){
+				mapClients[_sock] = mapServers[_sock]->available();
+				//Serial1.println("STATUS CLIENT 2");
+				result = mapClients[_sock].status();
+				//Serial1.println("STATUS CLIENT 3");
+			}
 		}else {
-			Serial1.println("STATUS CLIENT 4");
+			//Serial1.println("STATUS CLIENT 4");
 			result = mapClients[_sock].status();
 		}
 	}
@@ -705,7 +706,7 @@ void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
-DEBUG(_resPckt);
+//DEBUG(_resPckt);
 }
 
 void CommLgc::sendData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -745,7 +746,7 @@ void CommLgc::checkDataSent(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-DEBUG(_reqPckt);
+//DEBUG(_reqPckt);
 	int result = 0;
 	int _sock;
 	uint16_t _port;
@@ -772,14 +773,14 @@ DEBUG(_reqPckt);
 	if(_sock < MAX_SOCK_NUM) {
 		if(_prot == 0){ //TCP MODE
 			if(mapClients[_sock] == NULL){
-				Serial1.println("START CLIENT 0");
+				//Serial1.println("START CLIENT 0");
 				WiFiClient wc;
 				mapClients[_sock] = wc;
-				Serial1.println("START CLIENT 1");
+				//Serial1.println("START CLIENT 1");
 			}
-			Serial1.println("START CLIENT 2");
+			//Serial1.println("START CLIENT 2");
 			result = mapClients[_sock].connect(_ip, _port);
-			Serial1.println("START CLIENT 3");
+			//Serial1.println("START CLIENT 3");
 		} else { //UDP MODE
 			//TODO
 			//WiFiUDP client = mapClientsUDP[_sock];
@@ -790,7 +791,7 @@ DEBUG(_reqPckt);
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
-DEBUG(_resPckt);
+//DEBUG(_resPckt);
 }
 
 
