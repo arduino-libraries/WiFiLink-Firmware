@@ -217,6 +217,7 @@ void CommLgc::getEncryption(tMsgPacket *_reqPckt, tMsgPacket *_resPckt, uint8_t 
 	}
 
 	result = WiFi.encryptionType(idx);
+
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 
@@ -586,15 +587,8 @@ void CommLgc::availData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 
 	for(int i=0; i<_resPckt->params[0].paramLen; i++){
-	//for(int i=_resPckt->params[0].paramLen-1; i>=0; i--){
-	//for (int i=0, j=_resPckt->params[0].paramLen-1; i<_resPckt->params[0].paramLen, j>=0; i++, j--){
 		_resPckt->params[0].param[i] = ((uint8_t*)&result)[i];
 	}
-	// 	_resPckt->params[0].param[i] = ((uint8_t*)&result)[i];
-	// }
-//_resPckt->params[0].param[0] = '1';
-	//Serial1.println(result);
-
 
 }
 
@@ -650,22 +644,17 @@ void CommLgc::getData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 /* WiFi Client */
 void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
-//DEBUG(_reqPckt);
 	//TODO to be tested
 	uint8_t result = 0;
 	uint8_t _sock = 0;
 
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
-	//Serial1.print("SOCK: ");Serial1.println(_sock);
 	if(_sock < MAX_SOCK_NUM){
-		//Serial1.println("STOP CLIENT 1");
 		if(mapClients[_sock] != NULL ){
-			//Serial1.println("STOP CLIENT 2");
 			mapClients[_sock].stop();
 			result = 1;
 		}
-		//Serial1.println("STOP CLIENT 3");
 		//else if(mapClientsUDP[_sock] != NULL){
 			//TODO
 		//}
@@ -676,27 +665,21 @@ void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
-	//DEBUG(_resPckt);
 
 }
 
 void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-	//DEBUG(_reqPckt);
 	uint8_t result = 0;
 	uint8_t _sock = 0; //socket index
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 	if(_sock < MAX_SOCK_NUM) {
 		if(mapClients[_sock] == NULL){
-			//Serial1.println("STATUS CLIENT 1");
 			if(mapServers[_sock] != NULL){
-				mapClients[_sock] = mapServers[_sock]->available();
-				//Serial1.println("STATUS CLIENT 2");
+				mapClients[_sock] = mapServers[_sock]->available(); //Create the client from the server [Arduino as a Server]
 				result = mapClients[_sock].status();
-				//Serial1.println("STATUS CLIENT 3");
 			}
 		}else {
-			//Serial1.println("STATUS CLIENT 4");
 			result = mapClients[_sock].status();
 		}
 	}
@@ -706,7 +689,6 @@ void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
-//DEBUG(_resPckt);
 }
 
 void CommLgc::sendData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -746,7 +728,6 @@ void CommLgc::checkDataSent(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO to be tested
-//DEBUG(_reqPckt);
 	int result = 0;
 	int _sock;
 	uint16_t _port;
@@ -773,14 +754,10 @@ void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	if(_sock < MAX_SOCK_NUM) {
 		if(_prot == 0){ //TCP MODE
 			if(mapClients[_sock] == NULL){
-				//Serial1.println("START CLIENT 0");
 				WiFiClient wc;
 				mapClients[_sock] = wc;
-				//Serial1.println("START CLIENT 1");
 			}
-			//Serial1.println("START CLIENT 2");
 			result = mapClients[_sock].connect(_ip, _port);
-			//Serial1.println("START CLIENT 3");
 		} else { //UDP MODE
 			//TODO
 			//WiFiUDP client = mapClientsUDP[_sock];
@@ -791,7 +768,6 @@ void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
-//DEBUG(_resPckt);
 }
 
 
