@@ -815,6 +815,12 @@ void CommLgc::getDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	if(mapClientsUDP[_sock] != NULL ){
 		result = mapClientsUDP[_sock].read(buffer, bufferSize);
 	}
+
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
 }
 // void CommLgc::getParam(tParam *param, uint8_t *data){
 // 	for(int i=0; i< param->paramLen; i++){
