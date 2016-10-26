@@ -144,7 +144,7 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_REMOTE_DATA_CMD:		remoteData(_reqPckt, _resPckt);		break;
 			case SEND_DATA_TCP_CMD:			sendData(_reqPckt, _resPckt);			break;
 			case GET_DATABUF_TCP_CMD:		getDataBuf(_reqPckt, _resPckt);		break;
-			case INSERT_DATABUF_CMD:		break;
+			case INSERT_DATABUF_CMD:		insDataBuf(_reqPckt, _resPckt);		break;
 			default:	createErrorResponse(_resPckt); break;
 		}
 	}
@@ -822,6 +822,36 @@ void CommLgc::getDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
 }
+
+void CommLgc::insDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+
+	//NOTE myabe can use sendData, it's similar to this except the UDP client
+
+	int result = 0;
+	uint8_t _sock = 0;
+
+	//retrieve socket index
+	_sock = (uint8_t)_reqPckt->paramsData[0].data[0];
+
+	if(mapClientsUDP[_sock] != NULL){
+		//send data to client
+		result = mapClientsUDP[_sock].write(_reqPckt->paramsData[1].data, _reqPckt->paramsData[1].dataLen);
+		if(result == _reqPckt->paramsData[1].dataLen)
+			result = 1;
+		else
+			result = 0;
+	}
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
+
+}
+
+//ServerDrv::insertDataBuf(_sock, buffer, size);
+
 // void CommLgc::getParam(tParam *param, uint8_t *data){
 // 	for(int i=0; i< param->paramLen; i++){
 // 		data[i] = param->param[i];
