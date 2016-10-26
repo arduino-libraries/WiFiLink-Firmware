@@ -13,10 +13,12 @@ IPAddress* _handyGateway;
 
 uint8_t tcpResult = 0;
 
+int bufferSize = 0;
+
 //WiFiServer and WiFiClient / UDP map
 WiFiServer* mapServers[MAX_SOCK_NUM];
 WiFiClient mapClients[MAX_SOCK_NUM];
-WiFiUdp mapClientsUDP[MAX_SOCK_NUM];
+WiFiUDP mapClientsUDP[MAX_SOCK_NUM];
 
 WiFiClient client;
 
@@ -125,11 +127,11 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case SCAN_NETWORKS:			scanNetwork(_reqPckt, _resPckt);			break;
 			case START_SERVER_TCP_CMD:	startServer(_reqPckt, _resPckt);	break;
 			case GET_STATE_TCP_CMD:			serverStatus(_reqPckt, _resPckt);	break;
-			case DATA_SENT_TCP_CMD:			checkDataSent(_reqPckt, _resPckt);	break;
+			case DATA_SENT_TCP_CMD:			checkDataSent(_reqPckt, _resPckt);break;
 			case AVAIL_DATA_TCP_CMD:		availData(_reqPckt, _resPckt);		break;
-			case GET_DATA_TCP_CMD:			getData(_reqPckt, _resPckt);		break;
+			case GET_DATA_TCP_CMD:			getData(_reqPckt, _resPckt);			break;
 			case START_CLIENT_TCP_CMD:	startClient(_reqPckt, _resPckt);			break;
-			case STOP_CLIENT_TCP_CMD:		stopClient(_reqPckt, _resPckt);			break;
+			case STOP_CLIENT_TCP_CMD:		stopClient(_reqPckt, _resPckt);				break;
 			case GET_CLIENT_STATE_TCP_CMD:	clientStatus(_reqPckt, _resPckt);	break;
 			case DISCONNECT_CMD:				disconnect(_reqPckt, _resPckt);				break;
 			case GET_IDX_RSSI_CMD:			getRSSI(_reqPckt, _resPckt, 0);				break;
@@ -139,9 +141,9 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_FW_VERSION_CMD:		getFwVersion(_reqPckt, _resPckt);			break;
 			case START_SCAN_NETWORKS:		startScanNetwork(_reqPckt, _resPckt);	break;
 			case SEND_DATA_UDP_CMD:			break;
-			case GET_REMOTE_DATA_CMD:		break;
-			case SEND_DATA_TCP_CMD:			sendData(_reqPckt, _resPckt);	break;
-			case GET_DATABUF_TCP_CMD:		break;
+			case GET_REMOTE_DATA_CMD:		remoteData(_reqPckt, _resPckt);		break;
+			case SEND_DATA_TCP_CMD:			sendData(_reqPckt, _resPckt);			break;
+			case GET_DATABUF_TCP_CMD:		getDataBuf(_reqPckt, _resPckt);		break;
 			case INSERT_DATABUF_CMD:		break;
 			default:	createErrorResponse(_resPckt); break;
 		}
@@ -590,6 +592,7 @@ void CommLgc::availData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 		_resPckt->params[0].param[i] = ((uint8_t*)&result)[i];
 	}
 
+	bufferSize = result;
 }
 
 void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -800,7 +803,19 @@ void CommLgc::remoteData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	}
 }
 
+void CommLgc::getDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
+	int result = 0;
+	uint8_t _sock = 0;
+	char buffer[bufferSize];
 
+	//retrieve socket index
+	_sock = (uint8_t)_reqPckt->paramsData[0].data[0];
+
+	if(mapClientsUDP[_sock] != NULL ){
+		result = mapClientsUDP[_sock].read(buffer, bufferSize);
+	}
+}
 // void CommLgc::getParam(tParam *param, uint8_t *data){
 // 	for(int i=0; i< param->paramLen; i++){
 // 		data[i] = param->param[i];

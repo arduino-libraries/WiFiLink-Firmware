@@ -1,10 +1,10 @@
 #include "CommItf.h"
-#include "Arduino.h"
+
 #include "utility/wifi_utils.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiScan.h>
-
 #include <WiFiUdp.h>
+#include "Arduino.h"
 
 #ifndef H_COMM_LGC_H
 #define H_COMM_LGC_H
@@ -66,6 +66,7 @@ private:
 
 	/* WiFI UDP Client */
 	void remoteData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void getDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 };
 
 extern CommLgc CommunicationLogic;
