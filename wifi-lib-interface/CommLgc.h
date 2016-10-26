@@ -4,6 +4,8 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiScan.h>
 
+#include <WiFiUdp.h>
+
 #ifndef H_COMM_LGC_H
 #define H_COMM_LGC_H
 
@@ -61,6 +63,9 @@ private:
 	void startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+
+	/* WiFI UDP Client */
+	void remoteData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 };
 
 extern CommLgc CommunicationLogic;

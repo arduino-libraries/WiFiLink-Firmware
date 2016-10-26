@@ -16,7 +16,7 @@ uint8_t tcpResult = 0;
 //WiFiServer and WiFiClient / UDP map
 WiFiServer* mapServers[MAX_SOCK_NUM];
 WiFiClient mapClients[MAX_SOCK_NUM];
-//WiFiUDP* mapClientsUDP[MAX_SOCK_NUM];
+WiFiUdp mapClientsUDP[MAX_SOCK_NUM];
 
 WiFiClient client;
 
@@ -768,6 +768,36 @@ void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 	_resPckt->params[0].param[0] = result;
+}
+
+/* WiFi UDP Client */
+void CommLgc::remoteData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO to be tested
+	int _sock;
+
+	//retrieve sockets number
+	_sock = (int)_reqPckt->params[0].param[0];
+
+	if(_sock < MAX_SOCK_NUM && mapClientsUDP[_sock] != NULL) {
+		_resPckt->nParam = 2;
+		_resPckt->params[0].paramLen = 4;
+		_resPckt->params[1].paramLen = 2;
+
+		IPAddress remoteIp = mapClientsUDP[_sock].remoteIP();
+		_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+		_resPckt->params[0].param[0] = remoteIp.operator[](0);
+		_resPckt->params[0].param[1] = remoteIp.operator[](1);
+		_resPckt->params[0].param[2] = remoteIp.operator[](2);
+		_resPckt->params[0].param[3] = remoteIp.operator[](3);
+
+		uint16_t remotePort = mapClientsUDP[_sock].remotePort();
+		_resPckt->params[1].param = (char*)malloc(_resPckt->params[1].paramLen);
+		_resPckt->params[1].param[0] = (uint8_t)((remotePort & 0xff00)>>8);
+		_resPckt->params[1].param[1] = (uint8_t)(remotePort & 0xff);
+
+	} else {
+		createErrorResponse(_resPckt);
+	}
 }
 
 
