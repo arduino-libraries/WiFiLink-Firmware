@@ -68,6 +68,7 @@ private:
 	void remoteData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void getDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 	void insDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
+	void sendUdpData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt);
 
 };
 

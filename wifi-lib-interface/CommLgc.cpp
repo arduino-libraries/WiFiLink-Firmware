@@ -15,10 +15,10 @@ uint8_t tcpResult = 0;
 
 int bufferSize = 0;
 
-//WiFiServer and WiFiClient / UDP map
-WiFiServer* mapServers[MAX_SOCK_NUM];
-WiFiClient mapClients[MAX_SOCK_NUM];
-WiFiUDP mapClientsUDP[MAX_SOCK_NUM];
+//WiFiServer, WiFiClient and WiFiUDP map
+WiFiServer* mapWiFiServers[MAX_SOCK_NUM];
+WiFiClient mapWiFiClients[MAX_SOCK_NUM];
+WiFiUDP mapWiFiUDP[MAX_SOCK_NUM];
 
 WiFiClient client;
 
@@ -140,12 +140,13 @@ void CommLgc::process(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			case GET_HOST_BY_NAME_CMD:	getHostByName(_reqPckt, _resPckt);		break;
 			case GET_FW_VERSION_CMD:		getFwVersion(_reqPckt, _resPckt);			break;
 			case START_SCAN_NETWORKS:		startScanNetwork(_reqPckt, _resPckt);	break;
-			case SEND_DATA_UDP_CMD:			break;
+			case SEND_DATA_UDP_CMD:			sendUdpData(_reqPckt, _resPckt);	break;
 			case GET_REMOTE_DATA_CMD:		remoteData(_reqPckt, _resPckt);		break;
 			case SEND_DATA_TCP_CMD:			sendData(_reqPckt, _resPckt);			break;
 			case GET_DATABUF_TCP_CMD:		getDataBuf(_reqPckt, _resPckt);		break;
 			case INSERT_DATABUF_CMD:		insDataBuf(_reqPckt, _resPckt);		break;
-			default:	createErrorResponse(_resPckt); break;
+			//case PARSE_UDP_PCK:					insDataBuf(_reqPckt, _resPckt);		break;
+			default:										createErrorResponse(_resPckt); 		break;
 		}
 	}
 }
@@ -530,7 +531,6 @@ void CommLgc::getNetworkData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 }
 
-
 /* WiFI Server */
 void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO: To be tested
@@ -549,21 +549,32 @@ void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	//retrieve protocol mode (TCP/UDP)
 	_prot = (uint8_t)_reqPckt->params[2].param[0];
-
-	if(mapServers[_sock] != NULL ){
-		mapServers[_sock]->stop();
-		mapServers[_sock]->close();
-		free(mapServers[_sock]);
+	if(_sock < MAX_SOCK_NUM) {
+		if(_prot == 0){ //TCP MODE
+			if(mapWiFiServers[_sock] != NULL ){
+				mapWiFiServers[_sock]->stop();
+				mapWiFiServers[_sock]->close();
+				free(mapWiFiServers[_sock]);
+			}
+			mapWiFiServers[_sock] = new WiFiServer(_port);
+			mapWiFiServers[_sock]->begin();
+			result = 1;
+		} else {	//UDP MODE
+			if(mapWiFiUDP[_sock] != NULL ){
+				Serial1.println("START_SERVER_TCP_CMD: WIFI UDP EXISTS");
+				//TODO: stop, close?
+			} else {
+				Serial1.println("START_SERVER_TCP_CMD: WIFI UDP NOT EXISTS");
+				mapWiFiUDP[_sock].begin(_port);
+				result = 1;
+			}
+		}
 	}
-
-	mapServers[_sock] = new WiFiServer(_port);
-	mapServers[_sock]->begin();
-
 	//set the response struct
 	_resPckt->nParam = 1;
 	_resPckt->params[0].paramLen = 1;
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = 1; //fake data returned
+	_resPckt->params[0].param[0] = result;
 
 }
 
@@ -576,16 +587,19 @@ void CommLgc::availData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
 	if(_sock < MAX_SOCK_NUM) {
-		if(mapClients[_sock] != NULL ){
-			result = mapClients[_sock].available();
+		if(mapWiFiClients[_sock] != NULL ){
+			result = mapWiFiClients[_sock].available();
 		}
-		//	else if(mapClientsUDP[_sock] != NULL){
-		//TODO
-		//	}
+		else if(mapWiFiUDP[_sock] != NULL){//non ho un riferimento sul protocollo, quindi uso l'indice di socket
+			//Serial1.println("AVAIL DATA 5 UDP");
+			result = mapWiFiUDP[_sock].parsePacket();
+			//result = mapWiFiUDP[_sock].available();
+			//Serial1.println("AVAIL DATA 6 UDP");Serial1.println("AVAIL DATA 7 UDP");Serial1.println(result);
+		}
 	}
 	//set the response struct
 	_resPckt->nParam = 1;
-	_resPckt->params[0].paramLen = sizeof(result);//2; //TODO: try to get it dinamcally from result
+	_resPckt->params[0].paramLen = sizeof(result);
 	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 
 	for(int i=0; i<_resPckt->params[0].paramLen; i++){
@@ -603,7 +617,7 @@ void CommLgc::serverStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
-	result = mapServers[_sock]->status();
+	result = mapWiFiServers[_sock]->status();
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -625,17 +639,22 @@ void CommLgc::getData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//retrieve peek
 	_peek = (uint8_t)_reqPckt->params[1].param[0];
 
-	if(mapClients[_sock] != NULL ){
+	if(mapWiFiClients[_sock] != NULL ){
 		if(_peek > 0){
-			result = mapClients[_sock].peek();
+			result = mapWiFiClients[_sock].peek();
 		}
 		else{
-			result = mapClients[_sock].read();
+			result = mapWiFiClients[_sock].read();
 		}
 	}
-		//else if(mapClientsUDP[_sock] != NULL){
-			//TODO
-		//}
+	else if(mapWiFiUDP[_sock] != NULL){
+		if(_peek > 0){
+			result = mapWiFiUDP[_sock].peek();
+		}
+		else{
+			result = mapWiFiUDP[_sock].read();
+		}
+	}
 
 	//set the response struct
 	_resPckt->nParam = 1;
@@ -654,13 +673,14 @@ void CommLgc::stopClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 
 	if(_sock < MAX_SOCK_NUM){
-		if(mapClients[_sock] != NULL ){
-			mapClients[_sock].stop();
+		if(mapWiFiClients[_sock] != NULL ){
+			mapWiFiClients[_sock].stop();
 			result = 1;
 		}
-		//else if(mapClientsUDP[_sock] != NULL){
-			//TODO
-		//}
+		else if(mapWiFiUDP[_sock] != NULL){
+			mapWiFiUDP[_sock].stop();
+			result = 1;
+		}
 	}
 
 	//set the response struct
@@ -677,13 +697,13 @@ void CommLgc::clientStatus(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	uint8_t _sock = 0; //socket index
 	_sock = (uint8_t)_reqPckt->params[0].param[0];
 	if(_sock < MAX_SOCK_NUM) {
-		if(mapClients[_sock] == NULL){
-			if(mapServers[_sock] != NULL){
-				mapClients[_sock] = mapServers[_sock]->available(); //Create the client from the server [Arduino as a Server]
-				result = mapClients[_sock].status();
+		if(mapWiFiClients[_sock] == NULL){
+			if(mapWiFiServers[_sock] != NULL){
+				mapWiFiClients[_sock] = mapWiFiServers[_sock]->available(); //Create the client from the server [Arduino as a Server]
+				result = mapWiFiClients[_sock].status();
 			}
 		}else {
-			result = mapClients[_sock].status();
+			result = mapWiFiClients[_sock].status();
 		}
 	}
 
@@ -703,9 +723,9 @@ void CommLgc::sendData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//retrieve socket index and data
 	_sock = (uint8_t)_reqPckt->paramsData[0].data[0];
 
-	if(mapClients[_sock] != NULL){
+	if(mapWiFiClients[_sock] != NULL){
 		//send data to client
-		result = mapClients[_sock].write(_reqPckt->paramsData[1].data, _reqPckt->paramsData[1].dataLen);
+		result = mapWiFiClients[_sock].write(_reqPckt->paramsData[1].data, _reqPckt->paramsData[1].dataLen);
 		if(result == _reqPckt->paramsData[1].dataLen)
 			tcpResult = 1;
 		else
@@ -756,14 +776,18 @@ void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 	if(_sock < MAX_SOCK_NUM) {
 		if(_prot == 0){ //TCP MODE
-			if(mapClients[_sock] == NULL){
+			if(mapWiFiClients[_sock] == NULL){
 				WiFiClient wc;
-				mapClients[_sock] = wc;
+				mapWiFiClients[_sock] = wc;
 			}
-			result = mapClients[_sock].connect(_ip, _port);
+			result = mapWiFiClients[_sock].connect(_ip, _port);
 		} else { //UDP MODE
-			//TODO
-			//WiFiUDP client = mapClientsUDP[_sock];
+			if(mapWiFiUDP[_sock] == NULL){
+				WiFiUDP wu;
+				mapWiFiUDP[_sock] = wu;
+			}Serial1.println("BEGIN PACKET 1");Serial1.println(_ip);Serial1.println(_port);
+			result = mapWiFiUDP[_sock].beginPacket(_ip, _port);
+			Serial1.println("BEGIN PACKET 2");
 		}
 	}
 	//set the response struct
@@ -781,19 +805,19 @@ void CommLgc::remoteData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//retrieve sockets number
 	_sock = (int)_reqPckt->params[0].param[0];
 
-	if(_sock < MAX_SOCK_NUM && mapClientsUDP[_sock] != NULL) {
+	if(_sock < MAX_SOCK_NUM && mapWiFiUDP[_sock] != NULL) {
 		_resPckt->nParam = 2;
 		_resPckt->params[0].paramLen = 4;
 		_resPckt->params[1].paramLen = 2;
 
-		IPAddress remoteIp = mapClientsUDP[_sock].remoteIP();
+		IPAddress remoteIp = mapWiFiUDP[_sock].remoteIP();
 		_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
 		_resPckt->params[0].param[0] = remoteIp.operator[](0);
 		_resPckt->params[0].param[1] = remoteIp.operator[](1);
 		_resPckt->params[0].param[2] = remoteIp.operator[](2);
 		_resPckt->params[0].param[3] = remoteIp.operator[](3);
 
-		uint16_t remotePort = mapClientsUDP[_sock].remotePort();
+		uint16_t remotePort = mapWiFiUDP[_sock].remotePort();
 		_resPckt->params[1].param = (char*)malloc(_resPckt->params[1].paramLen);
 		_resPckt->params[1].param[0] = (uint8_t)((remotePort & 0xff00)>>8);
 		_resPckt->params[1].param[1] = (uint8_t)(remotePort & 0xff);
@@ -805,42 +829,75 @@ void CommLgc::remoteData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 
 void CommLgc::getDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO: To be tested
+	//Serial1.println("DATA BUF 1");
 	int result = 0;
 	uint8_t _sock = 0;
-	char buffer[bufferSize];
-
+	char buffer[bufferSize]; //bufferSize is filled before by availData
+	//Serial1.println("DATA BUF 2 ");Serial1.println(bufferSize);
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt->paramsData[0].data[0];
+	//Serial1.println("DATA BUF 3 ");Serial1.println(_sock);
+	if(_sock < MAX_SOCK_NUM && mapWiFiUDP[_sock] != NULL){
+		//Serial1.println("DATA BUF 4");
+		result = mapWiFiUDP[_sock].read(buffer, bufferSize);
+		//mapWiFiUDP[_sock].read(buffer, bufferSize);
+		//Serial1.println("DATA BUF 5 "); Serial1.println(result);
 
-	if(mapClientsUDP[_sock] != NULL ){
-		result = mapClientsUDP[_sock].read(buffer, bufferSize);
 	}
-
+	//Serial1.println("DATA BUF 6");
 	//set the response struct
 	_resPckt->nParam = 1;
-	_resPckt->params[0].paramLen = 1;
-	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
-	_resPckt->params[0].param[0] = result;
+	_resPckt->paramsData[0].dataLen = bufferSize;
+	_resPckt->paramsData[0].data = (char*)malloc(_resPckt->params[0].paramLen);
+	//_resPckt->params[0].param = "A";//buffer;
+	strncpy(_resPckt->paramsData[0].data, buffer, bufferSize);
+	//Serial1.println(_resPckt->paramsData[0].data);
 }
 
 void CommLgc::insDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//TODO: To be tested
 
-	//NOTE myabe can use sendData, it's similar to this except the UDP client
+	//NOTE myabe can use sendData, it's similar to this except the UDP
 
+	uint8_t result = 0;
+	uint8_t _sock = 0;
+	//Serial1.println("INS BUF 1 ");
+	//retrieve socket index
+	_sock = (uint8_t)_reqPckt->paramsData[0].data[0];
+	//Serial1.println("INS BUF 2 ");Serial1.println(_sock);
+	if(_sock < MAX_SOCK_NUM && mapWiFiUDP[_sock] != NULL){
+		//send data to client
+		//Serial1.println("INS BUF 3 ");
+		//Serial1.println(_reqPckt->paramsData[1].data);
+		//Serial1.println("INS BUF 4 ");
+		Serial1.println(_reqPckt->paramsData[1].dataLen);
+		Serial1.println("INS BUF 5 ");
+		//result =
+		mapWiFiUDP[_sock].write(_reqPckt->paramsData[1].data, _reqPckt->paramsData[1].dataLen);
+		Serial1.println(result);
+		Serial1.println("INS BUF 6 ");
+		result = 1;
+	}
+	//Serial1.println("INS BUF 7 ");
+	//set the response struct
+	_resPckt->nParam = 1;
+	_resPckt->params[0].paramLen = 1;
+	_resPckt->params[0].param = (char*)malloc(_resPckt->params[0].paramLen);
+	_resPckt->params[0].param[0] = result;
+	DEBUG(_resPckt);
+}
+
+void CommLgc::sendUdpData(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
+	//TODO: To be tested
 	int result = 0;
 	uint8_t _sock = 0;
 
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt->paramsData[0].data[0];
 
-	if(mapClientsUDP[_sock] != NULL){
+	if(_sock < MAX_SOCK_NUM && mapWiFiUDP[_sock] != NULL){
 		//send data to client
-		result = mapClientsUDP[_sock].write(_reqPckt->paramsData[1].data, _reqPckt->paramsData[1].dataLen);
-		if(result == _reqPckt->paramsData[1].dataLen)
-			result = 1;
-		else
-			result = 0;
+		result = mapWiFiUDP[_sock].endPacket();
 	}
 	//set the response struct
 	_resPckt->nParam = 1;

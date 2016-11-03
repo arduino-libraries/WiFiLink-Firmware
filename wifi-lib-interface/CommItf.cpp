@@ -136,9 +136,19 @@ void CommItf::write(tMsgPacket *_pckt){
 		Serial.write(_pckt->tcmd);
 		Serial.write(_pckt->nParam);
 		for(int i=0; i<(int)_pckt->nParam; i++){
-			Serial.write(_pckt->params[i].paramLen);
-			for(int j=0; j< (int)_pckt->params[i].paramLen; j++)
-				Serial.write( _pckt->params[i].param[j]);
+			//16 bit
+			if(_pckt->tcmd >= (0x40 | REPLY_FLAG) && _pckt->tcmd < (0x50 | REPLY_FLAG) ){
+				Serial.write( (uint8_t)((_pckt->paramsData[i].dataLen & 0xFF00) >> 8));
+				Serial.write( (uint8_t)(_pckt->paramsData[i].dataLen & 0xFF));
+				for(int j=0; j< (int)_pckt->paramsData[i].dataLen; j++)
+					Serial.write( _pckt->paramsData[i].data[j]);
+			}
+			//8 Bit
+			else{
+				Serial.write(_pckt->params[i].paramLen);
+				for(int j=0; j< (int)_pckt->params[i].paramLen; j++)
+					Serial.write( _pckt->params[i].param[j]);
+			}
 		}
 		Serial.write(END_CMD);
 	}
