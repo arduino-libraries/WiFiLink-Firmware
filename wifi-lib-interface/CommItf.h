@@ -31,6 +31,7 @@ private:
 	int createPacketFromSPI(tMsgPacket *_pck);
 	String readStringUntil(char);
 	int timedRead();
+  void initSPISlave();
 };
 
 extern CommItf CommunicationInterface;
