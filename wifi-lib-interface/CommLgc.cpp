@@ -22,6 +22,7 @@ WiFiUDP mapWiFiUDP[MAX_SOCK_NUM];
 
 WiFiClient client;
 
+#define Serial1 Serial
 CommLgc::CommLgc(){
 	//while(!CommunicationInterface.begin());
 }
@@ -47,7 +48,7 @@ void CommLgc::handle(){
 			// 	Serial1.println("==================");
 		 	process(reqPckt, resPckt);
 			// 	Serial1.println("=== TRANSMITTED ==");
-			// 	DEBUG(resPckt);
+			//  DEBUG(resPckt);
 			// 	Serial1.println("==================");
 		//}
 		CommunicationInterface.write(resPckt);
@@ -59,7 +60,7 @@ void CommLgc::handle(){
 }
 
 void CommLgc::freeMem(tMsgPacket *_pckt){
-	if(_pckt->tcmd >= 0x40 && _pckt->tcmd < 0x50){ //16 Bit
+	if((_pckt->tcmd >= 0x40 && _pckt->tcmd < 0x50) || ( _pckt->tcmd >= (0x40 | REPLY_FLAG) && _pckt->tcmd < (0x50 | REPLY_FLAG)) && _pckt->tcmd != (0x44 | REPLY_FLAG)){ //16 Bit
 		for(int i=0; i<_pckt->nParam; i++)
 			free(_pckt->paramsData[i].data);
 	}
@@ -561,10 +562,10 @@ void CommLgc::startServer(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			result = 1;
 		} else {	//UDP MODE
 			if(mapWiFiUDP[_sock] != NULL ){
-				Serial1.println("START_SERVER_TCP_CMD: WIFI UDP EXISTS");
+				//Serial1.println("START_SERVER_TCP_CMD: WIFI UDP EXISTS");
 				//TODO: stop, close?
 			} else {
-				Serial1.println("START_SERVER_TCP_CMD: WIFI UDP NOT EXISTS");
+				//Serial1.println("START_SERVER_TCP_CMD: WIFI UDP NOT EXISTS");
 				mapWiFiUDP[_sock].begin(_port);
 				result = 1;
 			}
@@ -785,9 +786,9 @@ void CommLgc::startClient(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 			if(mapWiFiUDP[_sock] == NULL){
 				WiFiUDP wu;
 				mapWiFiUDP[_sock] = wu;
-			}Serial1.println("BEGIN PACKET 1");Serial1.println(_ip);Serial1.println(_port);
+			}//Serial1.println("BEGIN PACKET 1");Serial1.println(_ip);Serial1.println(_port);
 			result = mapWiFiUDP[_sock].beginPacket(_ip, _port);
-			Serial1.println("BEGIN PACKET 2");
+			//Serial1.println("BEGIN PACKET 2");
 		}
 	}
 	//set the response struct
@@ -832,26 +833,39 @@ void CommLgc::getDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 	//Serial1.println("DATA BUF 1");
 	int result = 0;
 	uint8_t _sock = 0;
-	char buffer[bufferSize]; //bufferSize is filled before by availData
-	//Serial1.println("DATA BUF 2 ");Serial1.println(bufferSize);
+	//char buffer[bufferSize]; //bufferSize is filled before by availData
+	//Serial1.println("DATA BUF 2 ");//Serial1.println(bufferSize);
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt->paramsData[0].data[0];
 	//Serial1.println("DATA BUF 3 ");Serial1.println(_sock);
-	if(_sock < MAX_SOCK_NUM && mapWiFiUDP[_sock] != NULL){
-		//Serial1.println("DATA BUF 4");
-		result = mapWiFiUDP[_sock].read(buffer, bufferSize);
-		//mapWiFiUDP[_sock].read(buffer, bufferSize);
-		//Serial1.println("DATA BUF 5 "); Serial1.println(result);
+	if(_sock < MAX_SOCK_NUM){
+	  if(mapWiFiUDP[_sock] != NULL){
+  		//Serial1.println("DATA BUF 4");
+      char buffer[bufferSize]; //bufferSize is filled before by availData
+  		result = mapWiFiUDP[_sock].read(buffer, bufferSize);
+      _resPckt->nParam = 1;
+      _resPckt->paramsData[0].dataLen = bufferSize;
+      _resPckt->paramsData[0].data = (char*)malloc(_resPckt->params[0].paramLen);
+      strncpy(_resPckt->paramsData[0].data, buffer, bufferSize);
+	  }
+    else if(mapWiFiClients[_sock] != NULL){
+      //Serial1.println("DATA BUF 3");
+      //bufferSize =5;
+      uint8_t buffer_tcp[bufferSize];
+      result = mapWiFiClients[_sock].read(buffer_tcp, bufferSize);  
+      //Serial1.println("DATA BUF 4");
+      //Serial1.println(buffer_tcp);
+      _resPckt->nParam = 1;
+      _resPckt->paramsData[0].dataLen = bufferSize;
+      _resPckt->paramsData[0].data = (char*)malloc(_resPckt->paramsData[0].dataLen);
+      strncpy(_resPckt->paramsData[0].data, (char*)buffer_tcp, bufferSize);
+      //_resPckt->paramsData[0].data = "ciao\0";
+      //host[_reqPckt->params[0].paramLen] = '\0';
+      //Serial1.println("DATA BUF 5");
+    }
 
 	}
 	//Serial1.println("DATA BUF 6");
-	//set the response struct
-	_resPckt->nParam = 1;
-	_resPckt->paramsData[0].dataLen = bufferSize;
-	_resPckt->paramsData[0].data = (char*)malloc(_resPckt->params[0].paramLen);
-	//_resPckt->params[0].param = "A";//buffer;
-	strncpy(_resPckt->paramsData[0].data, buffer, bufferSize);
-	//Serial1.println(_resPckt->paramsData[0].data);
 }
 
 void CommLgc::insDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
@@ -870,12 +884,12 @@ void CommLgc::insDataBuf(tMsgPacket *_reqPckt, tMsgPacket *_resPckt){
 		//Serial1.println("INS BUF 3 ");
 		//Serial1.println(_reqPckt->paramsData[1].data);
 		//Serial1.println("INS BUF 4 ");
-		Serial1.println(_reqPckt->paramsData[1].dataLen);
-		Serial1.println("INS BUF 5 ");
+		//Serial1.println(_reqPckt->paramsData[1].dataLen);
+		//Serial1.println("INS BUF 5 ");
 		//result =
 		mapWiFiUDP[_sock].write(_reqPckt->paramsData[1].data, _reqPckt->paramsData[1].dataLen);
-		Serial1.println(result);
-		Serial1.println("INS BUF 6 ");
+		//Serial1.println(result);
+		//Serial1.println("INS BUF 6 ");
 		result = 1;
 	}
 	//Serial1.println("INS BUF 7 ");
