@@ -27,4 +27,6 @@
 *.exe
 *.out
 *.app
+
+*.zip
 .DS_Store
