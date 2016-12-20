@@ -28,7 +28,7 @@ public:
 
 private:
 	int createPacketFromSerial(tMsgPacket *_pck);
-	int createPacketFromSPI(tMsgPacket *_pck);
+	//int createPacketFromSPI(tMsgPacket *_pck);
 	String readStringUntil(char);
 	int timedRead();
   void initSPISlave();

@@ -119,14 +119,21 @@ enum numParams{
 typedef struct  __attribute__((__packed__))
 {
 	uint8_t	paramLen;
-	char*	param;
+	char	param[256];
 	//String	param;
+  //char*	param;
 }	tParam;
+
+// typedef struct  __attribute__((__packed__))
+// {
+// 	char response[32];
+// }	tParamStatic;
 
 typedef struct  __attribute__((__packed__))
 {
 	uint16_t	dataLen;
-	char*			data;
+	char			data[256];
+  //char* data;
 } tDataParam;
 
 typedef struct  __attribute__((__packed__))
@@ -137,6 +144,11 @@ typedef struct  __attribute__((__packed__))
 	tParam	params[MAX_PARAMS];
 	tDataParam	paramsData[MAX_PARAMS];
 }	tMsgPacket;//tSpiMsg;
+
+// typedef struct  __attribute__((__packed__))
+// {
+//     char response[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+// }	tMsgPacketStatic;//tSpiMsg;
 
 typedef struct  __attribute__((__packed__))
 {
