@@ -45,6 +45,8 @@
 #define CMD_POS			1		// Position of Command OpCode on SPI stream
 #define PARAM_LEN_POS 	2		// Position of Param len on SPI stream
 
+#define SlaveReadyPin 5
+
 //
 // enum {
 // 			SET_NET_CMD 		= 0x10,
@@ -119,7 +121,7 @@ enum numParams{
 typedef struct  __attribute__((__packed__))
 {
 	uint8_t	paramLen;
-	char	param[256];
+	char	param[128];
 	//String	param;
   //char*	param;
 }	tParam;
@@ -132,7 +134,7 @@ typedef struct  __attribute__((__packed__))
 typedef struct  __attribute__((__packed__))
 {
 	uint16_t	dataLen;
-	char			data[256];
+	char			data[128];
   //char* data;
 } tDataParam;
 
