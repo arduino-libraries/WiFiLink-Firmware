@@ -31,6 +31,7 @@ private:
 
 	/* WiFi Communication */
 	bool processing = false;
+	bool req_send = false;
 	int createPacketFromSPI();
 	void initSPISlave();
 
