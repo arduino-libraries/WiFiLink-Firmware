@@ -36,7 +36,7 @@
 
 #define TIMEOUT_CHAR    1000
 
-//#define	MAX_SOCK_NUM		4	/**< Maxmium number of socket  */
+#define	MAX_SOCK_NUMBER		4	/**< Maxmium number of socket  */
 #define NO_SOCKET_AVAIL     255
 
 #define START_CMD   0xE0
