@@ -17,9 +17,9 @@ int bufferSize = 0;													//used by getDataBuf function
 uint8_t numNets;														//number of networks scanned
 
 //WiFiServer, WiFiClient and WiFiUDP map
-WiFiServer* mapWiFiServers[MAX_SOCK_NUM];
-WiFiClient mapWiFiClients[MAX_SOCK_NUM];
-WiFiUDP mapWiFiUDP[MAX_SOCK_NUM];
+WiFiServer* mapWiFiServers[MAX_SOCK_NUMBER];
+WiFiClient mapWiFiClients[MAX_SOCK_NUMBER];
+WiFiUDP mapWiFiUDP[MAX_SOCK_NUMBER];
 
 //TODO the following const must be setted elsewhere
 #define END_CMD 0xEE
@@ -120,8 +120,10 @@ int CommLgc::createPacketFromSPI(){
 void CommLgc::initSPISlave(){
 
     pinMode(SlaveReadyPin,OUTPUT);
+    digitalWrite(SlaveReadyPin,LOW);
 		This = this;
     SPISlave.onData([](uint8_t * data, size_t len) {
+       digitalWrite(SlaveReadyPin,LOW);
        for(int i=0;i<len;i++){
            raw_pckt_spi += (char)data[i];
         }
@@ -129,7 +131,7 @@ void CommLgc::initSPISlave(){
 
     SPISlave.onStatus([](uint32_t data) {
 				if(data ==1){
-					digitalWrite(SlaveReadyPin,LOW);									//Slave ready command
+					//digitalWrite(SlaveReadyPin,LOW);									//Slave ready command
 	        This->createPacketFromSPI();                 			//parse the command received
 	        memset(_resPckt,0,sizeof(_resPckt));    					//reset response array
 					This->processing = true;
@@ -138,7 +140,8 @@ void CommLgc::initSPISlave(){
 					digitalWrite(SlaveReadyPin,LOW);
 					This->req_send = true;
 				}
-
+        else
+          Serial.println("error");
     });
 
     // Setup SPI Slave registers and pins
@@ -195,6 +198,7 @@ void CommLgc::process(){
 			case SEND_DATA_TCP_CMD:			sendData();				break;
 			case GET_DATABUF_TCP_CMD:		getDataBuf();			break;
 			case INSERT_DATABUF_CMD:		insDataBuf();			break;
+			//case GET_CLIENT_TCP_CMD:		clientConnected(); break;
 			//case PARSE_UDP_PCK:					insDataBuf(_reqPckt, _resPckt);		break;
 			default:										createErrorResponse(); 		break;
 		}
@@ -270,7 +274,7 @@ void CommLgc::getEncryption(uint8_t current){
 	}
 
 	result = WiFi.encryptionType(idx);
-	if result
+	//if result
 	//set the response struct
 	_resPckt[2] = 1;
 	_resPckt[3] = 1;
@@ -607,7 +611,7 @@ void CommLgc::startServer(){
 
 	//retrieve protocol mode (TCP/UDP)
 	_prot = (uint8_t)_reqPckt.params[2].param[0];
-	if(_sock < MAX_SOCK_NUM) {
+	if(_sock < MAX_SOCK_NUMBER) {
 		if(_prot == 0){ //TCP MODE
 			if(mapWiFiServers[_sock] != NULL ){
 				mapWiFiServers[_sock]->stop();
@@ -643,7 +647,7 @@ void CommLgc::availData(){
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt.params[0].param[0];
 
-	if(_sock < MAX_SOCK_NUM) {
+	if(_sock < MAX_SOCK_NUMBER) {
 		if(mapWiFiClients[_sock] != NULL ){
 			result = mapWiFiClients[_sock].available();
 		}
@@ -669,16 +673,18 @@ void CommLgc::serverStatus(){
 
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt.params[0].param[0];
+	//Serial.print("1");
   if(mapWiFiServers[_sock] != NULL)
 	  result = mapWiFiServers[_sock]->status();
   else
     result =0;
-
+	//Serial.print("2");
 	//set the response struct
 	_resPckt[2] = 1;
 	_resPckt[3] = 1;
 	_resPckt[4] = result;
 	_resPckt[5] = END_CMD;
+	//Serial.print("3");
 
 }
 
@@ -724,9 +730,10 @@ void CommLgc::stopClient(){
 	uint8_t result = 0;
 	uint8_t _sock = 0;
 	_sock = (uint8_t)_reqPckt.params[0].param[0];
-	if(_sock < MAX_SOCK_NUM){
+	if(_sock < MAX_SOCK_NUMBER){
 		if(mapWiFiClients[_sock] != NULL ){
 			mapWiFiClients[_sock].stop();
+			//mapWiFiClients[_sock] = NULL;
 			result = 1;
 		}
 		else if(mapWiFiUDP[_sock] != NULL){
@@ -743,19 +750,51 @@ void CommLgc::stopClient(){
 
 }
 
+/*void CommLgc::clientConnected(){
+  //TODO to be tested
+  uint8_t result = 0;
+  uint8_t _sock = 0; //socket index
+  _sock = (uint8_t)_reqPckt.params[0].param[0];
+  if(_sock < MAX_SOCK_NUMBER) {
+		if(mapWiFiClients[_sock] != NULL){
+		// 	if(mapWiFiServers[_sock] != NULL){
+    //     mapWiFiClients[_sock] = mapWiFiServers[_sock]->available(); //Create the client from the server [Arduino as a Server]
+    //     result = mapWiFiClients[_sock].status();
+		// 		Serial.println("1");
+    //   }
+    // }else {
+      result = mapWiFiClients[_sock].connected();
+			Serial.println("2");
+    }
+		else
+			result = 0;
+  }
+
+  //set the response struct
+	_resPckt[2] = 1;
+	_resPckt[3] = 1;
+	_resPckt[4] = result;
+	_resPckt[5] = END_CMD;
+
+}*/
+
 void CommLgc::clientStatus(){
   //TODO to be tested
   uint8_t result = 0;
   uint8_t _sock = 0; //socket index
   _sock = (uint8_t)_reqPckt.params[0].param[0];
-  if(_sock < MAX_SOCK_NUM) {
-    if(mapWiFiClients[_sock] == NULL){
-      if(mapWiFiServers[_sock] != NULL){
+	//Serial.println(_sock);
+  if(_sock < MAX_SOCK_NUMBER) {
+		if(mapWiFiClients[_sock] == NULL){
+			if(mapWiFiServers[_sock] != NULL){
         mapWiFiClients[_sock] = mapWiFiServers[_sock]->available(); //Create the client from the server [Arduino as a Server]
         result = mapWiFiClients[_sock].status();
+				//Serial.println("1");
       }
     }else {
       result = mapWiFiClients[_sock].status();
+			//Serial.println(_sock);
+			//Serial.println(result);
     }
   }
 
@@ -823,7 +862,7 @@ void CommLgc::startClient(){
 	//retrieve protocol mode (TCP/UDP)
 	_prot = (uint8_t)_reqPckt.params[3].param[0];
 
-	if(_sock < MAX_SOCK_NUM) {
+	if(_sock < MAX_SOCK_NUMBER) {
 		if(_prot == 0){
 			//TCP MODE
 			if(mapWiFiClients[_sock] == NULL){
@@ -855,7 +894,7 @@ void CommLgc::remoteData(){
 	//retrieve sockets number
 	_sock = (int)_reqPckt.params[0].param[0];
 
-	if(_sock < MAX_SOCK_NUM && mapWiFiUDP[_sock] != NULL) {
+	if(_sock < MAX_SOCK_NUMBER && mapWiFiUDP[_sock] != NULL) {
 		//set the response struct
 		_resPckt[2] = 2;
 		_resPckt[3] = 4;
@@ -891,7 +930,7 @@ void CommLgc::getDataBuf(){
 	else
 		_resPckt_len = 0;
 
-	if(_sock < MAX_SOCK_NUM){
+	if(_sock < MAX_SOCK_NUMBER){
 	  if(mapWiFiUDP[_sock] != NULL){
       char buffer[bufferSize+1]; 										//bufferSize is filled before by availData
   		result = mapWiFiUDP[_sock].read(buffer, bufferSize);
@@ -930,7 +969,7 @@ void CommLgc::insDataBuf(){
 
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt.paramsData[0].data[0];
-	if(_sock < MAX_SOCK_NUM && mapWiFiUDP[_sock] != NULL){
+	if(_sock < MAX_SOCK_NUMBER && mapWiFiUDP[_sock] != NULL){
 		mapWiFiUDP[_sock].write(_reqPckt.paramsData[1].data, _reqPckt.paramsData[1].dataLen);
 		result = 1;
 	}
@@ -951,7 +990,7 @@ void CommLgc::sendUdpData(){
 	//retrieve socket index
 	_sock = (uint8_t)_reqPckt.paramsData[0].data[0];
 
-	if(_sock < MAX_SOCK_NUM && mapWiFiUDP[_sock] != NULL){
+	if(_sock < MAX_SOCK_NUMBER && mapWiFiUDP[_sock] != NULL){
 		//send data to client
 		result = mapWiFiUDP[_sock].endPacket();
 	}
