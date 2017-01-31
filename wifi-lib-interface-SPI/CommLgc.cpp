@@ -28,7 +28,7 @@ WiFiUDP mapWiFiUDP[MAX_SOCK_NUMBER];
 
 tMsgPacket _reqPckt;                          //initialize struct to receive a command from MCU
 String raw_pckt_spi ="";  										//packet received from spi master
-char _resPckt[RESPONSE_LENGHT];														//response array
+char _resPckt[RESPONSE_LENGHT];								//response array
 int _resPckt_len = 0;													//size of array response (length/32)
 CommLgc* This;
 
@@ -130,7 +130,7 @@ void CommLgc::initSPISlave(){
     });
 
     SPISlave.onStatus([](uint32_t data) {
-				if(data ==1){
+				if(data==1){
 					//digitalWrite(SlaveReadyPin,LOW);									//Slave ready command
 	        This->createPacketFromSPI();                 			//parse the command received
 	        memset(_resPckt,0,sizeof(_resPckt));    					//reset response array
@@ -614,7 +614,7 @@ void CommLgc::startServer(){
 	if(_sock < MAX_SOCK_NUMBER) {
 		if(_prot == 0){ //TCP MODE
 			if(mapWiFiServers[_sock] != NULL ){
-				mapWiFiServers[_sock]->stop();
+				//mapWiFiServers[_sock]->stop();
 				mapWiFiServers[_sock]->close();
 				free(mapWiFiServers[_sock]);
 			}
@@ -814,7 +814,10 @@ void CommLgc::sendData(){
 
 	_sock = (uint8_t)_reqPckt.paramsData[0].data[0];
 	if(mapWiFiClients[_sock] != NULL){
-		result = mapWiFiClients[_sock].write(_reqPckt.paramsData[1].data, _reqPckt.paramsData[1].dataLen);
+		
+		char buffer_tmp[_reqPckt.paramsData[1].dataLen];//= _reqPckt.paramsData[1].data;
+		memcpy(buffer_tmp,_reqPckt.paramsData[1].data,_reqPckt.paramsData[1].dataLen);
+		result = mapWiFiClients[_sock].write(buffer_tmp,_reqPckt.paramsData[1].dataLen);
 		if(result == _reqPckt.paramsData[1].dataLen)
 			tcpResult = 1;
 		else
@@ -937,8 +940,8 @@ void CommLgc::getDataBuf(){
 			buffer[bufferSize] = END_CMD;
 
 			_resPckt[2] = 1;
-			_resPckt[4] = ((uint8_t*)&bufferSize)[0];
-			_resPckt[5] = ((uint8_t*)&bufferSize)[1];
+			_resPckt[3] = ((uint8_t*)&bufferSize)[0];
+			_resPckt[4] = ((uint8_t*)&bufferSize)[1];
 			memcpy(_resPckt+5,buffer,bufferSize);
 			//int resp_size = ceil((float)bufferSize/32);			//split the response (256) in array of 32 element
 
