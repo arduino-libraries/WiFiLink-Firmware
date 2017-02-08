@@ -12,8 +12,10 @@ IPAddress* _handyIp;
 IPAddress* _handySubnet;
 IPAddress* _handyGateway;
 
+uint8_t tent = 0;
+
 uint8_t tcpResult = 0;											//used by availData function
-int bufferSize = 0;													//used by getDataBuf function
+uint16_t bufferSize = 0;													//used by getDataBuf function
 uint8_t numNets;														//number of networks scanned
 
 //WiFiServer, WiFiClient and WiFiUDP map
@@ -44,30 +46,63 @@ void CommLgc::begin(){
 
 	Serial.begin(115200);
 	Serial.println("init SPI");
-	initSPISlave();
+	// for(int idx =0;idx<MAX_SOCK_NUMBER;idx++){
+	// 	Serial.println("try reset");
+	// 	if(mapWiFiServers[idx] != NULL ){
+	// 		//mapWiFiServers[_sock]->stop();
+	// 		Serial.println("server reset");
+	// 		mapWiFiServers[idx]->close();
+	// 		free(mapWiFiServers[idx]);
+	// 	}
+	// 	if(mapWiFiClients[idx] != NULL ){
+	// 		Serial.println("stop client");
+	// 		mapWiFiClients[idx].stop();
+	// 	}
+	// }
+		pinMode(4,OUTPUT);
+		initSPISlave();
+	//TODO add a method to reset array
 
 }
 
 void CommLgc::handle(){
-
+	//digitalWrite(4,HIGH);
+	//digitalWrite(4,LOW);
 	if(processing){
-		process();    																	//process commands received
-		SPISlave.setData(_resPckt);                     //send response to MCU
+		//ETS_SPI_INTR_DISABLE();
+		//digitalWrite(4,HIGH);
+		process();
+		// digitalWrite(4,HIGH);
+		// digitalWrite(4,LOW);
+		//ETS_SPI_INTR_ENABLE();   																	//process commands received
+		SPISlave.setData((uint8_t *)_resPckt,32);                     //send response to MCU
 		digitalWrite(SlaveReadyPin,HIGH);
 		if(_resPckt_len > 0){														//response length greater than 32 bytes
 			for(int i=1;i<_resPckt_len;i++){
 				while(!req_send){
 					delayMicroseconds(100);										//wait master
 				};
-				SPISlave.setData(_resPckt+(i*32));					//split response
+				SPISlave.setData((uint8_t *)_resPckt+(i*32),32);					//split response
 				digitalWrite(SlaveReadyPin,HIGH);
 				req_send = false;
 			}
 			_resPckt_len=0;
 		}
+		memset(_resPckt,0,sizeof(_resPckt));    					//reset response array
 		processing = false;
 	}
 
+}
+
+void CommLgc::freeMem(){
+	if((_reqPckt.tcmd >= 0x40 && _reqPckt.tcmd < 0x50) || ( _reqPckt.tcmd >= (0x40 | REPLY_FLAG) && _reqPckt.tcmd < (0x50 | REPLY_FLAG)) && _reqPckt.tcmd != (0x44 | REPLY_FLAG)){ //16 Bit
+		for(int i=0; i<_reqPckt.nParam; i++)
+			free(_reqPckt.paramsData[i].data);
+	}
+	else{ //8 Bit
+		for(int i=0; i<_reqPckt.nParam; i++)
+			free(_reqPckt.params[i].param);
+	}
 }
 
 void CommLgc::DEBUG_MEM() {
@@ -78,14 +113,25 @@ void CommLgc::DEBUG_MEM() {
 
 int CommLgc::createPacketFromSPI(){
 	//TODO parse the message and create the packet
+                 //send response to MCU
       int idx = 0;
       unsigned char tmp;
-
       //Start Command
       if(raw_pckt_spi[idx] != START_CMD){
+				Serial.println(raw_pckt_spi[idx],HEX);
+				// Serial.println(raw_pckt_spi[1],HEX);
+				// Serial.println(raw_pckt_spi[2],HEX);
+				// Serial.println(raw_pckt_spi[3],HEX);
+				uint8_t testx[4] = {0xE0,0x20,0x00,0xEE};
+				SPISlave.setData(testx,32);
+				// if (tent++ < 4) {
+				// 	/* code */
+				// 	ESP.restart();
+				// }
         //Error
         return -1;
       }
+				//freeMem();
         _reqPckt.cmd = raw_pckt_spi[idx];
         //The command
         _reqPckt.tcmd = raw_pckt_spi[++idx];
@@ -98,6 +144,9 @@ int CommLgc::createPacketFromSPI(){
           if( _reqPckt.tcmd >= 0x40 && _reqPckt.tcmd < 0x50 ){ //16bit tParam
             tmp = (uint16_t)((raw_pckt_spi[++idx] << 8) + (uint8_t)raw_pckt_spi[++idx]);
             _reqPckt.paramsData[a].dataLen = tmp;
+						memset(_reqPckt.paramsData[a].data,0,sizeof(_reqPckt.paramsData[a].data));    					//
+						//_reqPckt.paramsData[a].data = (char*)malloc(_reqPckt.paramsData[a].dataLen);
+						//memcpy(_reqPckt.paramsData[a].data,raw_pckt_spi+5,_reqPckt.paramsData[a].data);
             for(int b=0; b<(int)_reqPckt.paramsData[a].dataLen; b++){
               tmp = raw_pckt_spi[++idx];
               _reqPckt.paramsData[a].data[b] = (char)tmp;
@@ -105,6 +154,8 @@ int CommLgc::createPacketFromSPI(){
           }else{ //8bit tParamData
             tmp = raw_pckt_spi[++idx];
             _reqPckt.params[a].paramLen = tmp;
+						//_reqPckt.params[a].param = (char*)malloc(_reqPckt.params[a].paramLen);
+						memset(_reqPckt.params[a].param,0,sizeof(_reqPckt.params[a].param));    					//
             for(int b=0; b<(int)_reqPckt.params[a].paramLen; b++){
               tmp = raw_pckt_spi[++idx];
               _reqPckt.params[a].param[b] = (char)tmp;
@@ -113,7 +164,10 @@ int CommLgc::createPacketFromSPI(){
           }
         }
       //OK
+			// uint8_t testx[4] = {0xE0,0x06,0x00,0xEE};
+			// SPISlave.setData(testx,32);
       raw_pckt_spi ="";
+			tent = 0;
 			return 0;
 }
 
@@ -121,9 +175,10 @@ void CommLgc::initSPISlave(){
 
     pinMode(SlaveReadyPin,OUTPUT);
     digitalWrite(SlaveReadyPin,LOW);
+
 		This = this;
     SPISlave.onData([](uint8_t * data, size_t len) {
-       digitalWrite(SlaveReadyPin,LOW);
+			 digitalWrite(SlaveReadyPin,LOW);
        for(int i=0;i<len;i++){
            raw_pckt_spi += (char)data[i];
         }
@@ -131,17 +186,18 @@ void CommLgc::initSPISlave(){
 
     SPISlave.onStatus([](uint32_t data) {
 				if(data==1){
-					//digitalWrite(SlaveReadyPin,LOW);									//Slave ready command
-	        This->createPacketFromSPI();                 			//parse the command received
-	        memset(_resPckt,0,sizeof(_resPckt));    					//reset response array
-					This->processing = true;
+	        if(This->createPacketFromSPI()==0){                 			//parse the command received
+						This->processing = true;
+					}
 				}
 				else if(data==2){
 					digitalWrite(SlaveReadyPin,LOW);
 					This->req_send = true;
 				}
-        else
+        else if(data==3){
           Serial.println("error");
+					digitalWrite(SlaveReadyPin,HIGH);
+				}
     });
 
     // Setup SPI Slave registers and pins
@@ -605,7 +661,7 @@ void CommLgc::startServer(){
 	uint8_t _p1 = (uint8_t)_reqPckt.params[0].param[0];
 	uint8_t _p2 = (uint8_t)_reqPckt.params[0].param[1];
 	_port = (_p1 << 8) + _p2;
-
+	Serial.println("server begin");
 	//retrieve sockets number
 	_sock = (int)_reqPckt.params[1].param[0];
 
@@ -617,6 +673,10 @@ void CommLgc::startServer(){
 				//mapWiFiServers[_sock]->stop();
 				mapWiFiServers[_sock]->close();
 				free(mapWiFiServers[_sock]);
+			}
+			if(_port == 80){
+				//UIserver.stop();			//stop UI SERVER
+				UI_alert = true;
 			}
 			mapWiFiServers[_sock] = new WiFiServer(_port);
 			mapWiFiServers[_sock]->begin();
@@ -660,6 +720,8 @@ void CommLgc::availData(){
 	_resPckt[2] = 1;
 	_resPckt[3] = 2;
 	_resPckt[4] = ((uint8_t*)&result)[0];
+	// _resPckt[4] = (uint8_t)((result & 0xff00)>>8);//((uint8_t*)&bufferSize)[1];
+	// _resPckt[5] = (uint8_t)(result & 0xff);
 	_resPckt[5] = ((uint8_t*)&result)[1];
 	_resPckt[6] = END_CMD;
 
@@ -808,16 +870,36 @@ void CommLgc::clientStatus(){
 
 void CommLgc::sendData(){
 	//TODO to be tested
-
 	int result = 0;
 	uint8_t _sock = 0; //socket index
 
+
 	_sock = (uint8_t)_reqPckt.paramsData[0].data[0];
 	if(mapWiFiClients[_sock] != NULL){
-		
+
 		char buffer_tmp[_reqPckt.paramsData[1].dataLen];//= _reqPckt.paramsData[1].data;
-		memcpy(buffer_tmp,_reqPckt.paramsData[1].data,_reqPckt.paramsData[1].dataLen);
-		result = mapWiFiClients[_sock].write(buffer_tmp,_reqPckt.paramsData[1].dataLen);
+		//uint8_t testx[6] = {0xE0,0xC4,0x01,0x01,0x00,0xEE};
+		//SPISlave.setData(testx,32);
+		//if(_reqPckt.paramsData[1].dataLen<32){
+			memcpy(buffer_tmp,_reqPckt.paramsData[1].data,_reqPckt.paramsData[1].dataLen);
+			result = mapWiFiClients[_sock].write(buffer_tmp,_reqPckt.paramsData[1].dataLen);
+			//result = mapWiFiClients[_sock].write("ciaociao",8);
+			//result = _reqPckt.paramsData[1].dataLen;
+		// }
+		// else{
+		// 	int writePckt_len = ceil((float)_reqPckt.paramsData[1].dataLen/32);
+		// 	//Serial.println(writePckt_len);
+		// 	for(int i=0;i<writePckt_len;i++){
+		// 		memcpy(buffer_tmp,_reqPckt.paramsData[1].data+(i*32),32);
+		// 		if(_reqPckt.paramsData[1].dataLen >= ((i+1)*32))
+		// 			result += mapWiFiClients[_sock].write(buffer_tmp,32);
+		// 		else
+		// 			result += mapWiFiClients[_sock].write(buffer_tmp,_reqPckt.paramsData[1].dataLen-(i*32));
+		// 		delayMicroseconds(20);		//time need for wifi event
+		// 	}
+		// }
+		  //digitalWrite(4,LOW);
+		//result = mapWiFiClients[_sock].write(_reqPckt.paramsData[1].data,_reqPckt.paramsData[1].dataLen);
 		if(result == _reqPckt.paramsData[1].dataLen)
 			tcpResult = 1;
 		else
@@ -825,7 +907,7 @@ void CommLgc::sendData(){
 	}
 	_resPckt[2] = 1;
 	_resPckt[3] = 1;
-	_resPckt[4] = tcpResult;
+	_resPckt[4] = tcpResult; //tcpResult
 	_resPckt[5] = END_CMD;
 
 }
@@ -938,11 +1020,15 @@ void CommLgc::getDataBuf(){
       char buffer[bufferSize+1]; 										//bufferSize is filled before by availData
   		result = mapWiFiUDP[_sock].read(buffer, bufferSize);
 			buffer[bufferSize] = END_CMD;
-
+			Serial.println(bufferSize);
+			//Serial.println();
 			_resPckt[2] = 1;
-			_resPckt[3] = ((uint8_t*)&bufferSize)[0];
-			_resPckt[4] = ((uint8_t*)&bufferSize)[1];
+			//_resPckt[3] = 2;
+			_resPckt[3] = (uint8_t)((bufferSize & 0xff00)>>8);//((uint8_t*)&bufferSize)[1];
+			_resPckt[4] = (uint8_t)(bufferSize & 0xff);
 			memcpy(_resPckt+5,buffer,bufferSize);
+			// for(int i=0;i<bufferSize;i++)
+			// 	Serial.print(_resPckt[5+i]);
 			//int resp_size = ceil((float)bufferSize/32);			//split the response (256) in array of 32 element
 
 	  }
@@ -953,8 +1039,8 @@ void CommLgc::getDataBuf(){
 			buffer_tcp[bufferSize] = END_CMD;
 			//TODO need to add a buffer
       _resPckt[2] = 1;
-      _resPckt[3] = ((uint8_t*)&bufferSize)[0];
-			_resPckt[4] = ((uint8_t*)&bufferSize)[1];
+			_resPckt[3] = (uint8_t)((bufferSize & 0xff00)>>8);//((uint8_t*)&bufferSize)[1];
+			_resPckt[4] = (uint8_t)(bufferSize & 0xff);
 			memcpy(_resPckt+5,buffer_tcp,bufferSize);
 			//int resp_size = ceil((float)bufferSize/32);
 

@@ -2,7 +2,7 @@
 
 #include "utility/wifi_utils.h"
 #include <ESP8266WiFi.h>
-#include <ESP8266WiFiScan.h>
+//#include <ESP8266WiFiScan.h>
 #include <WiFiUdp.h>
 #include "Arduino.h"
 
@@ -16,12 +16,13 @@ class CommLgc {
 
 public:
 	CommLgc();
-
+	bool UI_alert = false;
 	/* Logic Functions */
 	void begin();
 	void handle();
 	void createErrorResponse();
 	void process();
+	void freeMem();
 
 	/* DEBUG */
 	void DEBUG_MEM();
