@@ -1,5 +1,6 @@
 var currAp = "";
 var blockScan = 0;
+var attempt = 0;
 
 function createInputForAp(b) {
     if (b.essid == "" && b.rssi == 0) {
@@ -61,7 +62,7 @@ function scanResult() {
         return scanAPs()
     }
     scanReqCnt += 1;
-    ajaxJson("GET", "/wifi/scan", function(c) {
+    ajaxJson("GET", "wifi/scan", function (c) {
         currAp = getSelectedEssid();
         if (c.result.APs.length > 0) {
             $("#aps").innerHTML = "";
@@ -74,42 +75,46 @@ function scanResult() {
                 d = d + 1
             }
             enableNetworkSelection();
+            $("#spinner").setAttribute("hidden", "");
             showNotification("Scan found " + d + " networks");
             var a = $("#connect-button");
             a.className = a.className.replace(" pure-button-disabled", "");
             if (scanTimeout != null) {
                 clearTimeout(scanTimeout)
             }
-            //scanTimeout = window.setTimeout(scanAPs, 20000)
-        } else {
-            window.setTimeout(scanResult, 1000)
         }
-    }, function(b, a) {
-        window.setTimeout(scanResult, 5000)
+        else {
+            scanResult();
+        }
+    }, function (b, a) {
+        scanResult();
     })
 }
 
 function scanAPs() {
+    $("#spinner").removeAttribute("hidden");
     if (blockScan) {
         scanTimeout = window.setTimeout(scanAPs, 1000);
         return
     }
     scanTimeout = null;
     scanReqCnt = 0;
-    ajaxReq("GET", "/wifi/scan", function(a) {
-        window.setTimeout(scanResult, 1000)
-    }, function(b, a) {
-        window.setTimeout(scanResult, 1000)
+    window.scrollTo(0, 0);
+    ajaxReq("GET", "wifi/scan", function (a) {
+        scanResult();
+    }, function (b, a) {
+        scanResult();
     })
 }
 
 function getStatus() {
-    ajaxJsonSpin("GET", "connstatus", function(c) {
+    ajaxJsonSpin("GET", "connstatus", function (c) {
         if (c.status == "idle" || c.status == "connecting") {
             $("#aps").innerHTML = "Connecting...";
             showNotification("Connecting...");
             window.setTimeout(getStatus, 1000)
-        } else {
+        }
+        else {
             if (c.status == "got IP address") {
                 var a = "Connected! Got IP " + c.ip;
                 showNotification(a);
@@ -117,33 +122,45 @@ function getStatus() {
                 blockScan = 0;
                 if (c.modechange == "yes") {
                     var b = "esp will switch to STA-only mode in a few seconds";
-                    window.setTimeout(function() {
+                    window.setTimeout(function () {
                         showNotification(b)
                     }, 4000)
                 }
                 $("#reconnect").removeAttribute("hidden");
                 $("#reconnect").innerHTML = 'If you are in the same network, go to <a href="http://' + c.ip + '/">' + c.ip + "</a>, else connect to network " + c.ssid + " first."
-            } else {
+            }
+            else {
                 blockScan = 0;
-                showWarning("Connection failed: " + c.status + ", " + c.reason);
-                $("#aps").innerHTML = 'Check password and selected AP. <a href="wifi.tpl">Go Back</a>'
+                showWarning("Connection failed");
+                $("#aps").innerHTML = 'Check password and selected AP. <a href="wifi.html">Go Back</a>'
             }
         }
-    }, function(b, a) {
-        window.setTimeout(getStatus, 2000)
+        enableNetworkSelection()
+    }, function (b, a) {
+        if(attempt<3){
+            showWarning("Problems in connection...I'm trying again");
+            window.setTimeout(hideWarning, 3000);
+            window.setTimeout(getStatus, 2000);
+            attempt++;
+        }
+        else{
+            showWarning("Connection failed.\nConnect to AP");
+            attempt = 0;
+            blockScan = 0;
+        }
     })
 }
 
 function changeWifiMode(a) {
     blockScan = 1;
     hideWarning();
-    ajaxSpin("POST", "setmode?mode=" + a, function(b) {
+    ajaxSpin("GET", "setmode?mode=" + a, function (b) {
         showNotification("Mode changed");
         window.setTimeout(getWifiInfo, 100);
         blockScan = 0;
         window.setTimeout(enableNetworkSelection, 500)
-    }, function(c, b) {
-        showWarning("Error changing mode: " + b);
+    }, function (c, b) { //b is the error message, sometimes is empty
+        showWarning("Error changing mode ");
         window.setTimeout(getWifiInfo, 100);
         blockScan = 0;
         window.setTimeout(enableNetworkSelection, 500)
@@ -163,13 +180,12 @@ function changeWifiAp(d) {
     var g = a.className;
     a.className += " pure-button-disabled";
     blockScan = 1;
-    ajaxSpin("POST", c, function(h) {
+    ajaxSpin("GET", c, function (h) {
         $("#spinner").removeAttribute("hidden");
         showNotification("Waiting for network change...");
         window.scrollTo(0, 0);
-        window.setTimeout(getStatus, 2000);
-        getWifiInfo();
-    }, function(i, h) {
+        window.setTimeout(getStatus, 2000)
+    }, function (i, h) {
         showWarning("Error switching network: " + h);
         a.className = g;
         window.setTimeout(scanAPs, 1000)
@@ -186,9 +202,14 @@ function changeSpecial(c) {
     hideWarning();
     var a = $("#special-button");
     addClass(a, "pure-button-disabled");
-    ajaxSpin("GET", b, function(d) {
+    ajaxSpin("GET", b, function (d) {
         removeClass(a, "pure-button-disabled")
-    }, function(f, d) {
+        if (d != 1) {
+            alert("New IP set, you will be redirect to: " + JSON.parse(d).url);
+            setTimeout(document.location.href = "http://" + JSON.parse(d).url + "/wifi.html", 1000);
+        }
+        else showNotification("DHCP set");
+    }, function (f, d) {
         showWarning("Error: " + d);
         removeClass(a, "pure-button-disabled");
         getWifiInfo()
@@ -199,30 +220,22 @@ function changeHostname() {
     var a = $("#change-hostname-input").value;
     if (a == "") {
         alert("Insert hostname!")
-    } else {
-        ajaxSpin("GET", "/system/update?name=" + a, function() {
+    }
+    else {
+        ajaxSpin("GET", "/system/update?name=" + a, function () {
             showHostnameModal(a)
         })
     }
 }
 
 function showHostnameModal(b) {
-    var a = "Hostname changed in : " + b + "\nYour board will be reboot to apply change";
+    var a = "Hostname changed in : " + b; //+ "\nYour board will be reboot to apply change";
     var c = confirm(a);
-    if (c == true) {
-        ajaxSpin("POST", "/log/reset", function(d) {
-            showNotification("Resetting esp");
-            document.title = "UNO WiFi - " + b
-        }, function(f, d) {
-            showWarning("Error resetting esp")
-        })
-    } else {
-        alert("Reboot your board manually to apply change")
-    }
+    if (c == false) alert("Error in hostname change");
 }
 
 function hostnameLimitations(c) {
-    var b = new RegExp("^[a-zA-Z0-9\b]+$");
+    var b = new RegExp("^[a-zA-Z0-9\-_\b]+$");
     var a = String.fromCharCode(!c.charCode ? c.which : c.charCode);
     if (!b.test(a)) {
         c.preventDefault();
@@ -231,22 +244,27 @@ function hostnameLimitations(c) {
 }
 
 function enableNetworkSelection() {
-    ajaxJson("GET", "/wifi/info", function(j) {
+    ajaxJson("GET", "/wifi/info", function (j) {
         var a = (j.mode == "STA");
-        var h = document.getElementById("wifiform"),
-            c = h.getElementsByTagName("input"),
-            f = $("#connect-button");
+        var h = document.getElementById("wifiform")
+            , c = h.getElementsByTagName("input")
+            , f = $("#connect-button")
+            , s = $("#scan-button");
         var g, d = 0;
         while (g = c[d++]) {
             g.disabled = a
         }
         f.disabled = a;
+        s.disabled = a;
         if (a) {
             bnd(h, "mouseover", displayWiFiModeAlert);
             bnd(h, "mouseout", hideWiFiModeAlert)
-        } else {
+            toggleClass(f, "pure-button-disabled")
+        }
+        else {
             ubnd(h, "mouseover", displayWiFiModeAlert);
             ubnd(h, "mouseout", hideWiFiModeAlert)
+            removeClass(f, "pure-button-disabled")
         }
     })
 }
