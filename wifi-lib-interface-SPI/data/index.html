@@ -3,7 +3,6 @@
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<!--    <title>Arduino Primo</title>-->
     <link rel="stylesheet" href="pure.css">
     <link rel="stylesheet" href="style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,7 +15,6 @@
             <div class="header">
                 <div>
                     <h1 class="jl">WELCOME</h1>
-                    <!--                    <p>The Arduino Primo firmware allows you to upload an Arduino sketch via OTA - Over The Air technology. You can use Arduino IDE for that. Please refer to the online <a href="http://www.arduino.org/learning/getting-started/getting-started-with-arduino-primo">Starter Guide</a> on Arduino.org</p>-->
                     <p>Please refer to the online <a href="http://www.arduino.org/learning/getting-started/getting-started-with-arduino-primo">Starter Guide</a> on Arduino.org</p>
                 </div>
             </div>
@@ -95,6 +93,11 @@
             getSystemInfo();
             bnd($("#change-hostname-button"), "click", changeToWifiPage);
             bnd($("#change-network-button"), "click", changeToWifiPage);
+            ajaxReq("GET", "wifi/scan", function (a) {
+                console.log("Scan done")
+            }, function () {
+                console.log("Error during scan")
+            });
         });
     </script>
 </body>

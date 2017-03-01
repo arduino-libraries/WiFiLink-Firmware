@@ -1,6 +1,7 @@
 var currAp = "";
 var blockScan = 0;
 var attempt = 0;
+var networkAlert = "This action could need a reboot if you run a sketch that uses network connection. Do you want to proceed?";
 
 function createInputForAp(b) {
     if (b.essid == "" && b.rssi == 0) {
@@ -137,13 +138,13 @@ function getStatus() {
         }
         enableNetworkSelection()
     }, function (b, a) {
-        if(attempt<3){
+        if (attempt < 3) {
             showWarning("Problems in connection...I'm trying again");
             window.setTimeout(hideWarning, 3000);
             window.setTimeout(getStatus, 2000);
             attempt++;
         }
-        else{
+        else {
             showWarning("Connection failed.\nConnect to AP");
             attempt = 0;
             blockScan = 0;
@@ -152,79 +153,87 @@ function getStatus() {
 }
 
 function changeWifiMode(a) {
-    blockScan = 1;
-    hideWarning();
-    ajaxSpin("GET", "setmode?mode=" + a, function (b) {
-        showNotification("Mode changed");
-        window.setTimeout(getWifiInfo, 100);
-        blockScan = 0;
-        window.setTimeout(enableNetworkSelection, 500)
-    }, function (c, b) { //b is the error message, sometimes is empty
-        showWarning("Error changing mode ");
-        window.setTimeout(getWifiInfo, 100);
-        blockScan = 0;
-        window.setTimeout(enableNetworkSelection, 500)
-    })
+    if (confirm(networkAlert)) {
+        blockScan = 1;
+        hideWarning();
+        ajaxSpin("GET", "setmode?mode=" + a, function (b) {
+            showNotification("Mode changed");
+            window.setTimeout(getWifiInfo, 100);
+            blockScan = 0;
+            window.setTimeout(enableNetworkSelection, 500)
+        }, function (c, b) { //b is the error message, sometimes is empty
+            showWarning("Error changing mode ");
+            window.setTimeout(getWifiInfo, 100);
+            blockScan = 0;
+            window.setTimeout(enableNetworkSelection, 500)
+        })
+    }
 }
 
 function changeWifiAp(d) {
-    d.preventDefault();
-    var b = $("#wifi-passwd").value;
-    var f = getSelectedEssid();
-    showNotification("Connecting to " + f);
-    var c = "connect?essid=" + encodeURIComponent(f) + "&passwd=" + encodeURIComponent(b);
-    hideWarning();
-    $("#reconnect").setAttribute("hidden", "");
-    $("#wifi-passwd").value = "";
-    var a = $("#connect-button");
-    var g = a.className;
-    a.className += " pure-button-disabled";
-    blockScan = 1;
-    ajaxSpin("GET", c, function (h) {
-        $("#spinner").removeAttribute("hidden");
-        showNotification("Waiting for network change...");
-        window.scrollTo(0, 0);
-        window.setTimeout(getStatus, 2000)
-    }, function (i, h) {
-        showWarning("Error switching network: " + h);
-        a.className = g;
-        window.setTimeout(scanAPs, 1000)
-    })
+    if (confirm(networkAlert)) {
+        d.preventDefault();
+        var b = $("#wifi-passwd").value;
+        var f = getSelectedEssid();
+        showNotification("Connecting to " + f);
+        var c = "connect?essid=" + encodeURIComponent(f) + "&passwd=" + encodeURIComponent(b);
+        hideWarning();
+        $("#reconnect").setAttribute("hidden", "");
+        $("#wifi-passwd").value = "";
+        var a = $("#connect-button");
+        var g = a.className;
+        a.className += " pure-button-disabled";
+        blockScan = 1;
+        ajaxSpin("GET", c, function (h) {
+            $("#spinner").removeAttribute("hidden");
+            showNotification("Waiting for network change...");
+            window.scrollTo(0, 0);
+            window.setTimeout(getStatus, 2000)
+        }, function (i, h) {
+            showWarning("Error switching network: " + h);
+            a.className = g;
+            window.setTimeout(scanAPs, 1000)
+        })
+    }
 }
 
 function changeSpecial(c) {
-    c.preventDefault();
-    var b = "special";
-    b += "?dhcp=" + document.querySelector('input[name="dhcp"]:checked').value;
-    b += "&staticip=" + encodeURIComponent($("#wifi-staticip").value);
-    b += "&netmask=" + encodeURIComponent($("#wifi-netmask").value);
-    b += "&gateway=" + encodeURIComponent($("#wifi-gateway").value);
-    hideWarning();
-    var a = $("#special-button");
-    addClass(a, "pure-button-disabled");
-    ajaxSpin("GET", b, function (d) {
-        removeClass(a, "pure-button-disabled")
-        if (d != 1) {
-            alert("New IP set, you will be redirect to: " + JSON.parse(d).url);
-            setTimeout(document.location.href = "http://" + JSON.parse(d).url + "/wifi.html", 1000);
-        }
-        else showNotification("DHCP set");
-    }, function (f, d) {
-        showWarning("Error: " + d);
-        removeClass(a, "pure-button-disabled");
-        getWifiInfo()
-    })
+    if (confirm(networkAlert)) {
+        c.preventDefault();
+        var b = "special";
+        b += "?dhcp=" + document.querySelector('input[name="dhcp"]:checked').value;
+        b += "&staticip=" + encodeURIComponent($("#wifi-staticip").value);
+        b += "&netmask=" + encodeURIComponent($("#wifi-netmask").value);
+        b += "&gateway=" + encodeURIComponent($("#wifi-gateway").value);
+        hideWarning();
+        var a = $("#special-button");
+        addClass(a, "pure-button-disabled");
+        ajaxSpin("GET", b, function (d) {
+            removeClass(a, "pure-button-disabled")
+            if (d != 1) {
+                alert("New IP set, you will be redirect to: " + JSON.parse(d).url);
+                setTimeout(document.location.href = "http://" + JSON.parse(d).url + "/wifi.html", 1000);
+            }
+            else showNotification("DHCP set");
+        }, function (f, d) {
+            showWarning("Error: " + d);
+            removeClass(a, "pure-button-disabled");
+            getWifiInfo()
+        })
+    }
 }
 
 function changeHostname() {
-    var a = $("#change-hostname-input").value;
-    if (a == "") {
-        alert("Insert hostname!")
-    }
-    else {
-        ajaxSpin("GET", "/system/update?name=" + a, function () {
-            showHostnameModal(a)
-        })
+    if (confirm(networkAlert)) {
+        var a = $("#change-hostname-input").value;
+        if (a == "") {
+            alert("Insert hostname!")
+        }
+        else {
+            ajaxSpin("GET", "/system/update?name=" + a, function () {
+                showHostnameModal(a)
+            })
+        }
     }
 }
 

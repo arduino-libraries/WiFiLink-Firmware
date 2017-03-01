@@ -3,7 +3,6 @@
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<!--    <title>Arduino Primo</title>-->
     <link rel="stylesheet" href="pure.css">
     <link rel="stylesheet" href="style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -89,7 +88,7 @@
                                         <td id="wifi-ip"></td>
                                     </tr>
                                     <tr>
-                                        <td>WiFi rssi</td>
+                                        <td>WiFi rssi (dB)</td>
                                         <td id="wifi-rssi"></td>
                                     </tr>
                                     <tr>
@@ -158,7 +157,7 @@
             bnd($("#dhcp-ron"), "click", doDhcp);
             bnd($("#dhcp-roff"), "click", doStatic);
             bnd($("#scan-button"), "click", scanAPs);
-            scanAPs();
+            scanResult();
         });
     </script>
 </body>
