@@ -65,7 +65,6 @@ int CommItf::createPacket(tMsgPacket *_reqPckt){
 
 		#if defined ESP_CH_UART
 		String raw_pckt_serial = readStringUntil(END_CMD);
-		Serial1.println(raw_pckt_serial.length());
 		memcpy(raw_pckt, raw_pckt_serial.c_str(),raw_pckt_serial.length());
 		#endif
 
