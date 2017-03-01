@@ -259,7 +259,6 @@ void initWBServer(){
     
    WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
 
-   //Serial1.println("4");
     server.serveStatic("/fs", SPIFFS, "/");
 
     //"wifi/info" information
@@ -383,9 +382,7 @@ void initWBServer(){
          ESP.restart();
          while ( WiFi.waitForConnectResult() != WL_CONNECTED ) {
            delay ( 5000 );
-           //Serial.print( "." );
          }
-         //Serial.print( "Connected" );
        }
      });
 
@@ -397,6 +394,5 @@ void initWBServer(){
     });
 
     server.begin();
-    //Serial1.println("5");
 
 }
