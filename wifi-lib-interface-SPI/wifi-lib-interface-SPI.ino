@@ -1,4 +1,3 @@
-
 #include "CommLgc.h"
 //#include "utility/wifi_utils.h"
 
@@ -8,6 +7,7 @@
 #include <ArduinoOTA.h>
 
 #include <FS.h>
+#include <ArduinoJson.h>
 #include <Hash.h>
 #include <ESP8266WebServer.h>
 
@@ -22,7 +22,6 @@ void setup() {
   CommunicationLogic.begin();
   initWBServer();               //UI begin
   initMDNS();                   //set MDNS
-  //Serial1.println("end setup");
 
 }
 

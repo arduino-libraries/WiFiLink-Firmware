@@ -11,29 +11,10 @@ long previousMillis = 0;        // will store last time LED was updated
 long bl_interval = 100;
 
 int tot;        //need to save the number of the networks scanned
-//bool conflag = false;
 String staticIP_param ;
 String netmask_param;
 String gateway_param;
 String dhcp = "on";
-//bool reboot = false;
-//int c_status = WL_IDLE_STATUS;
-
-//holds the current upload
-File fsUploadFile;
-
-//format bytes
-String formatBytes(size_t bytes){
-  if (bytes < 1024){
-    return String(bytes)+"B";
-  } else if(bytes < (1024 * 1024)){
-    return String(bytes/1024.0)+"KB";
-  } else if(bytes < (1024 * 1024 * 1024)){
-    return String(bytes/1024.0/1024.0)+"MB";
-  } else {
-    return String(bytes/1024.0/1024.0/1024.0)+"GB";
-  }
-}
 
 String getContentType(String filename){
   if(server.hasArg("download")) return "application/octet-stream";
@@ -65,77 +46,6 @@ bool handleFileRead(String path){
     return true;
   }
   return false;
-}
-
-void handleFileUpload(){
-  if(server.uri() != "/edit") return;
-  HTTPUpload& upload = server.upload();
-  if(upload.status == UPLOAD_FILE_START){
-    String filename = upload.filename;
-    if(!filename.startsWith("/")) filename = "/"+filename;
-    fsUploadFile = SPIFFS.open(filename, "w");
-    filename = String();
-  } else if(upload.status == UPLOAD_FILE_WRITE){
-    //DBG_OUTPUT_PORT.print("handleFileUpload Data: "); DBG_OUTPUT_PORT.println(upload.currentSize);
-    if(fsUploadFile)
-      fsUploadFile.write(upload.buf, upload.currentSize);
-  } else if(upload.status == UPLOAD_FILE_END){
-    if(fsUploadFile)
-      fsUploadFile.close();
-  }
-}
-
-void handleFileDelete(){
-  if(server.args() == 0) return server.send(500, "text/plain", "BAD ARGS");
-  String path = server.arg(0);
-  if(path == "/")
-    return server.send(500, "text/plain", "BAD PATH");
-  if(!SPIFFS.exists(path))
-    return server.send(404, "text/plain", "FileNotFound");
-  SPIFFS.remove(path);
-  server.send(200, "text/plain", "");
-  path = String();
-}
-
-void handleFileCreate(){
-  if(server.args() == 0)
-    return server.send(500, "text/plain", "BAD ARGS");
-  String path = server.arg(0);
-  if(path == "/")
-    return server.send(500, "text/plain", "BAD PATH");
-  if(SPIFFS.exists(path))
-    return server.send(500, "text/plain", "FILE EXISTS");
-  File file = SPIFFS.open(path, "w");
-  if(file)
-    file.close();
-  else
-    return server.send(500, "text/plain", "CREATE FAILED");
-  server.send(200, "text/plain", "");
-  path = String();
-}
-
-void handleFileList() {
-  if(!server.hasArg("dir")) {server.send(500, "text/plain", "BAD ARGS"); return;}
-
-  String path = server.arg("dir");
-  Dir dir = SPIFFS.openDir(path);
-  path = String();
-
-  String output = "[";
-  while(dir.next()){
-    File entry = dir.openFile("r");
-    if (output != "[") output += ',';
-    bool isDir = false;
-    output += "{\"type\":\"";
-    output += (isDir)?"dir":"file";
-    output += "\",\"name\":\"";
-    output += String(entry.name()).substring(1);
-    output += "\"}";
-    entry.close();
-  }
-
-  output += "]";
-  server.send(200, "text/json", output);
 }
 
 String toStringIp(IPAddress ip) {
@@ -255,7 +165,6 @@ void handleWBServer(){
 }
 
 void wifiLed(){
-
   unsigned long currentMillis = millis();
   int wifi_status = WiFi.status();
   if ((WiFi.getMode() == 1 || WiFi.getMode() == 3) && wifi_status == WL_CONNECTED) {
@@ -281,6 +190,44 @@ void initMDNS(){
     MDNS.enableArduino(80, false);
 }
 
+bool setNetworkConfig(String ssid, String password, String hostname){
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& json = jsonBuffer.createObject();
+
+  json["ssid"] = (ssid.length()>1 ? ssid : getNetworkConfig("ssid") );
+  json["password"] = (password.length()>1 ? password : getNetworkConfig("password") );
+  json["hostname"] = (hostname.length()>1 ? hostname : getNetworkConfig("hostname") );
+  
+  File configFile = SPIFFS.open("/config.json", "w+");
+  if (!configFile) {
+    Serial.println("Failed to open config file for writing");
+    return false;
+  }
+  json.printTo(configFile);
+  return true;
+}
+
+String getNetworkConfig(String param){
+  File configFile = SPIFFS.open("/config.json", "r");
+  if (!configFile) {
+    Serial.println("Failed to open config file");
+    return "false";
+  }
+  size_t size = configFile.size();
+  std::unique_ptr<char[]> buf(new char[size]);
+  configFile.readBytes(buf.get(), size);
+  
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& json = jsonBuffer.parseObject(buf.get());
+
+  if (!json.success()) {
+    Serial.println("Failed to parse config file");
+    return "false";
+  }
+  
+  return json[param];
+}
+
 void initWBServer(){
     SPIFFS.begin();
     {
@@ -290,12 +237,11 @@ void initWBServer(){
       size_t fileSize = dir.fileSize();
     }
     }
-    //initWebFS();
+    
     pinMode(WIFI_LED, OUTPUT);
     digitalWrite(WIFI_LED, LOW);
 
    tot = WiFi.scanNetworks();
-   //Serial1.println("3");
    //set default AP
    byte mac[6];
    WiFi.macAddress(mac);
@@ -310,8 +256,9 @@ void initWBServer(){
     //Enable to start in AP+STA mode
    WiFi.mode(WIFI_AP_STA);
    WiFi.hostname(HOSTNAME);
+    
+   WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
 
-   //Serial1.println("4");
     server.serveStatic("/fs", SPIFFS, "/");
 
     //"wifi/info" information
@@ -341,9 +288,11 @@ void initWBServer(){
     });
 
     server.on("/system/update", []() {
-      String newhostname = server.arg("name");// = request->getParam("name")->value();
+      String newhostname = server.arg("name");
       WiFi.hostname(newhostname);
+      setNetworkConfig("", "", newhostname);
       MDNS.begin(newhostname.c_str());
+      initMDNS();
       server.send(200, "text/plain", newhostname);
     });
 
@@ -380,25 +329,22 @@ void initWBServer(){
 
 
     server.on("/connect", []() {
-        newSSID_param = server.arg("essid"); //"DHLabs";// request->getParam("essid")->value();
-        newPASSWORD_param = server.arg("passwd"); //"dhlabsrfid01";//request->getParam("passwd")->value();
+        newSSID_param = server.arg("essid");
+        newPASSWORD_param = server.arg("passwd"); 
         server.send(200, "text/plain", "1");
-        // File f = SPIFFS.open("/wifi.txt", "w");
-        // f.println(newSSID_param);
-        // f.println(newPASSWORD_param);
-        // f.close();
         const char* newSSID = newSSID_param.c_str();
         const char* newPASSWORD = newPASSWORD_param.c_str();
         ETS_SPI_INTR_DISABLE();
         WiFi.begin(newSSID,newPASSWORD);
         WiFi.hostname(WiFi.hostname()); //set hostname
         ETS_SPI_INTR_ENABLE();
+        
+        setNetworkConfig(newSSID, newPASSWORD, "");
     });
 
 
       server.on("/connstatus", []() {
         String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
-        //request->send(200, "text/plain", String("{\"status\":\"connecting\"}"));
         server.send(200, "text/plain", String("{\"url\":\"got IP address\", \"ip\":\""+ipadd+"\", \"modechange\":\"no\", \"ssid\":\""+WiFi.SSID()+"\", \"reason\":\"-\", \"status\":\""+ toStringWifiStatus(WiFi.status()) +"\"}"));
 
     });
@@ -436,9 +382,7 @@ void initWBServer(){
          ESP.restart();
          while ( WiFi.waitForConnectResult() != WL_CONNECTED ) {
            delay ( 5000 );
-           //Serial.print( "." );
          }
-         //Serial.print( "Connected" );
        }
      });
 
@@ -450,6 +394,5 @@ void initWBServer(){
     });
 
     server.begin();
-    //Serial1.println("5");
 
 }
