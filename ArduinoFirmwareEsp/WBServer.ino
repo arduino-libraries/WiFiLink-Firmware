@@ -15,7 +15,8 @@ String staticIP_param ;
 String netmask_param;
 String gateway_param;
 String dhcp = "on";
-String HOSTNAME = "Arduino";
+String HOSTNAME = "arduino";
+
 
 String getContentType(String filename){
   if(server.hasArg("download")) return "application/octet-stream";
@@ -198,10 +199,10 @@ bool setNetworkConfig(String ssid, String password, String hostname){
   json["ssid"] = (ssid.length()>1 ? ssid : getNetworkConfig("ssid") );
   json["password"] = (password.length()>1 ? password : getNetworkConfig("password") );
   json["hostname"] = (hostname.length()>1 ? hostname : getNetworkConfig("hostname") );
-  
+
   File configFile = SPIFFS.open("/config.json", "w+");
   if (!configFile) {
-    Serial.println("Failed to open config file for writing");
+    //Serial.println("Failed to open config file for writing");
     return false;
   }
   json.printTo(configFile);
@@ -211,78 +212,84 @@ bool setNetworkConfig(String ssid, String password, String hostname){
 String getNetworkConfig(String param){
   File configFile = SPIFFS.open("/config.json", "r");
   if (!configFile) {
-    Serial.println("Failed to open config file");
+    //Serial.println("Failed to open config file");
     return "false";
   }
   size_t size = configFile.size();
   std::unique_ptr<char[]> buf(new char[size]);
   configFile.readBytes(buf.get(), size);
-  
+
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject& json = jsonBuffer.parseObject(buf.get());
 
   if (!json.success()) {
-    Serial.println("Failed to parse config file");
+    //Serial.println("Failed to parse config file");
     return "false";
   }
-  
+
   return json[param];
 }
 
 void initWBServer(){
-    SPIFFS.begin();
-    {
+  SPIFFS.begin();
+  {
     Dir dir = SPIFFS.openDir("/");
     while (dir.next()) {
       String fileName = dir.fileName();
       size_t fileSize = dir.fileSize();
     }
-    }
-    
-    pinMode(WIFI_LED, OUTPUT);
-    digitalWrite(WIFI_LED, LOW);
+  }
 
-   tot = WiFi.scanNetworks();
-   //set default AP
-   byte mac[6];
-   WiFi.macAddress(mac);
-   String tmpString = "Arduino-" + String(BOARDMODEL)  + "-" +  String(mac[3], HEX) + String(mac[4], HEX) + String(mac[5], HEX);
-   char softApssid[18];
-   memset(softApssid,0,sizeof(softApssid));
-   tmpString.toCharArray(softApssid, tmpString.length()+1);
-   delay(1000); 
-   WiFi.softAP(softApssid);
-   WiFi.softAPConfig(default_IP, default_IP, IPAddress(255, 255, 255, 0));   //set default ip for AP mode
+  pinMode(WIFI_LED, OUTPUT);
+  digitalWrite(WIFI_LED, LOW);
 
-   String tmpHostname = getNetworkConfig("hostname");
-   if( tmpHostname.length()>1) 
-      HOSTNAME = tmpHostname;
-   else
-      HOSTNAME = tmpString;
-      
+  tot = WiFi.scanNetworks();
+  //set default AP
+  byte mac[6];
+  WiFi.macAddress(mac);
+  String apSSID = String(SSIDNAME) + "-" +  String(mac[3], HEX) + String(mac[4], HEX) + String(mac[5], HEX);
+  char softApssid[18];
+  //memset(softApssid,0,sizeof(softApssid));
+  apSSID.toCharArray(softApssid, apSSID.length()+1);
+  delay(1000);
+  WiFi.softAP(softApssid);
+  WiFi.softAPConfig(default_IP, default_IP, IPAddress(255, 255, 255, 0));   //set default ip for AP mode
+
+  //retrieve user defined hostname
+  String tmpHostname = getNetworkConfig("hostname");
+  if( tmpHostname.length()>1)
+    HOSTNAME = tmpHostname;
+  else
+    HOSTNAME = apSSID;
+
     //Enable to start in AP+STA mode
    WiFi.mode(WIFI_AP_STA);
    WiFi.hostname(HOSTNAME);
-   
 
-   WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
+  if(getNetworkConfig("ssid") != ""){
+    if(getNetworkConfig("password") != ""){
+      WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
+    }else{
+      WiFi.begin(getNetworkConfig("ssid").c_str());
+    }
+  }
 
-    server.serveStatic("/fs", SPIFFS, "/");
+  server.serveStatic("/fs", SPIFFS, "/");
 
-    //"wifi/info" information
-    server.on("/wifi/info", []() {
-      //ETS_SPI_INTR_DISABLE();
-      String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
-      String staticadd = dhcp.equals("on") ? "0.0.0.0" : staticIP_param;
-      int change = WiFi.getMode() == 1 ? 3 : 1;
-      String cur_ssid = (WiFi.getMode() == 2 )? "none" : WiFi.SSID();
-      
+  //"wifi/info" information
+  server.on("/wifi/info", []() {
+    //ETS_SPI_INTR_DISABLE();
+    String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
+    String staticadd = dhcp.equals("on") ? "0.0.0.0" : staticIP_param;
+    int change = WiFi.getMode() == 1 ? 3 : 1;
+    String cur_ssid = (WiFi.getMode() == 2 )? "none" : WiFi.SSID();
 
-      server.send(200, "text/plain", String("{\"ssid\":\"" + cur_ssid + "\",\"hostname\":\"" + WiFi.hostname() + "\",\"ip\":\"" + ipadd + "\",\"mode\":\"" + toStringWifiMode(WiFi.getMode()) + "\",\"chan\":\""
-                                              + WiFi.channel() + "\",\"status\":\"" + toStringWifiStatus(WiFi.status()) + "\", \"gateway\":\"" + toStringIp(WiFi.gatewayIP()) + "\", \"netmask\":\"" + toStringIp(WiFi.subnetMask()) + "\",\"rssi\":\""
-                                              + WiFi.RSSI() + "\",\"mac\":\"" + WiFi.macAddress() + "\",\"phy\":\"" + WiFi.getPhyMode() + "\", \"dhcp\": \"" + dhcp + "\", \"staticip\":\"" + staticadd +
-                                              + "\", \"warn\": \"" + "<a href='#' class='pure-button button-primary button-larger-margin' onclick='changeWifiMode(" + change + ")'>Switch to " + toStringWifiMode(change) + " mode</a>\""
-                                              + "}" ));
+
+    server.send(200, "text/plain", String("{\"ssid\":\"" + cur_ssid + "\",\"hostname\":\"" + WiFi.hostname() + "\",\"ip\":\"" + ipadd + "\",\"mode\":\"" + toStringWifiMode(WiFi.getMode()) + "\",\"chan\":\""
+                                            + WiFi.channel() + "\",\"status\":\"" + toStringWifiStatus(WiFi.status()) + "\", \"gateway\":\"" + toStringIp(WiFi.gatewayIP()) + "\", \"netmask\":\"" + toStringIp(WiFi.subnetMask()) + "\",\"rssi\":\""
+                                            + WiFi.RSSI() + "\",\"mac\":\"" + WiFi.macAddress() + "\",\"phy\":\"" + WiFi.getPhyMode() + "\", \"dhcp\": \"" + dhcp + "\", \"staticip\":\"" + staticadd +
+                                            + "\", \"warn\": \"" + "<a href='#' class='pure-button button-primary button-larger-margin' onclick='changeWifiMode(" + change + ")'>Switch to " + toStringWifiMode(change) + " mode</a>\""
+                                            + "}" ));
       //ETS_SPI_INTR_ENABLE();
     });
 
@@ -339,7 +346,7 @@ void initWBServer(){
 
     server.on("/connect", []() {
         newSSID_param = server.arg("essid");
-        newPASSWORD_param = server.arg("passwd"); 
+        newPASSWORD_param = server.arg("passwd");
         server.send(200, "text/plain", "1");
         const char* newSSID = newSSID_param.c_str();
         const char* newPASSWORD = newPASSWORD_param.c_str();
@@ -347,7 +354,7 @@ void initWBServer(){
         WiFi.begin(newSSID,newPASSWORD);
         WiFi.hostname(WiFi.hostname()); //set hostname
         ETS_SPI_INTR_ENABLE();
-        
+
         setNetworkConfig(newSSID, newPASSWORD, "");
     });
 
@@ -399,19 +406,19 @@ void initWBServer(){
         StaticJsonBuffer<200> jsonBuffer;
         JsonObject& boardInfo = jsonBuffer.createObject();
         String output = "";
-        if (BOARDMODEL == "Primo"){
+        if (BOARDMODEL == "PRIMO"){
             boardInfo["name"] = "Primo";
             boardInfo["icon"] = "logoPrimo.ico";
             boardInfo["logo"] = "logoPrimo.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-primo";
         }
-        else if (BOARDMODEL == "StarOtto"){
+        else if (BOARDMODEL == "STAROTTO"){
             boardInfo["name"] = "Star Otto";
             boardInfo["icon"] = "logoOtto.ico";
             boardInfo["logo"] = "logoOtto.png";
-            boardInfo["link"] = "http://www.arduino.org/learning/getting-started/start-with-arduino-star-otto";
+            boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-star-otto";
         }
-        else if (BOARDMODEL =="UnoWiFi"){
+        else if (BOARDMODEL =="UNOWIFIDEVED"){
             boardInfo["name"] = "Uno WiFi";
             boardInfo["icon"] = "logoUnoWiFi.ico";
             boardInfo["logo"] = "logoUnoWiFi.png";
