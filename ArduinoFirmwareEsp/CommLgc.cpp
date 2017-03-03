@@ -125,7 +125,7 @@ void CommLgc::process(){
 /* WiFi Base */
 void CommLgc::getRSSI(uint8_t current){
 
-	uint8_t resp_idx=2;
+	int resp_idx=2;
 	int32_t result;
 	//retrieve RSSI
 	if(current == 1){
@@ -154,7 +154,7 @@ void CommLgc::getRSSI(uint8_t current){
 
 void CommLgc::getCurrentSSID(){
 
-	uint8_t resp_idx=2;
+	int resp_idx = 2;
 
 	//retrieve SSID of the current network
 	String result = WiFi.SSID();
@@ -173,7 +173,7 @@ void CommLgc::getEncryption(uint8_t current){
 
 	uint8_t result = 0;
 	uint8_t net_idx =	0; //network index
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 
 	if(current == 1){
 		//uint8_t numNets = WiFi.scanNetworks();	//get networks numbers
@@ -220,7 +220,7 @@ void CommLgc::getMacAddress(){
 
 void CommLgc::disconnect(){
 
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	bool result;
 
 	//Disconnet from the network
@@ -237,7 +237,7 @@ void CommLgc::disconnect(){
 
 void CommLgc::getStatus(){
 
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint8_t result;
 
 	//Disconnet from the network
@@ -254,7 +254,7 @@ void CommLgc::getStatus(){
 
 void CommLgc::begin(uint8_t idx){
 
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint8_t result;
 
 	if(idx == 0){ // if idx==0 connection without password
@@ -291,7 +291,7 @@ void CommLgc::begin(uint8_t idx){
 
 void CommLgc::startScanNetwork(){
 
-	uint8_t resp_idx=2;
+	int resp_idx = 2;
 	//set the response struct
 	_resPckt[resp_idx++] = PARAM_NUMS_1;
 	_resPckt[resp_idx++] = PARAM_SIZE_1;
@@ -303,7 +303,7 @@ void CommLgc::startScanNetwork(){
 
 void CommLgc::scanNetwork(){
 
-	uint8_t resp_idx=2;
+	int resp_idx = 2;
 	//scanNetworks command
 	numNets = WiFi.scanNetworks();
 	//fix the maximum network number to MAX_PARAMS
@@ -328,7 +328,7 @@ void CommLgc::getBSSID(uint8_t current){
 	//TODO: To be tested
 	int paramLen = 6;
 	uint8_t idx = 0;		//network index
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint8_t* result;
 	uint8_t numNets = WiFi.scanNetworks();	//get networks numbers
 
@@ -365,7 +365,7 @@ void CommLgc::config(){
 
 	//TODO: To be tested
 	bool result;
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint8_t validParams = 0;
 
 	uint8_t stip0, stip1, stip2, stip3,
@@ -408,7 +408,7 @@ void CommLgc::config(){
 
 void CommLgc::setDNS(){
 	//TODO: To be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	bool result;
 	uint8_t validParams = 0;
 
@@ -464,7 +464,7 @@ void CommLgc::reqHostByName(){
 
 void CommLgc::getHostByName(){
 	//TODO to be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	//set the response struct
 	_resPckt[resp_idx++] = PARAM_NUMS_1;
 	_resPckt[resp_idx++] = PARAM_SIZE_4;
@@ -480,7 +480,7 @@ void CommLgc::getHostByName(){
 
 void CommLgc::getFwVersion(){
 
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	//send back to arduino the firmware version number
 	_resPckt[resp_idx++] = PARAM_NUMS_1;
 	_resPckt[resp_idx++] = PARAM_SIZE_5;
@@ -495,7 +495,7 @@ void CommLgc::getFwVersion(){
 /* WiFi IPAddress*/
 void CommLgc::getNetworkData(){
 	//TODO to be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	IPAddress localIp, subnetMask, gatewayIp;//, dnsIp1, dnsIp2;
 
 	localIp = WiFi.localIP();
@@ -530,7 +530,7 @@ void CommLgc::getNetworkData(){
 /* WiFI Server */
 void CommLgc::startServer(){
 	//TODO: To be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint8_t result = 0;
 	uint16_t _port = 0;
 	int _sock = 0;
@@ -580,7 +580,7 @@ void CommLgc::startServer(){
 
 void CommLgc::availData(){
 	//TODO to be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint16_t result = 0;
 	uint8_t _sock = 0;
 
@@ -610,7 +610,7 @@ void CommLgc::availData(){
 
 void CommLgc::serverStatus(){
 	//TODO: To be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint8_t result = 0;
 	uint8_t _sock = 0;
 
@@ -632,7 +632,7 @@ void CommLgc::serverStatus(){
 
 void CommLgc::getData(){
 	//TODO: To be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint8_t result = 0;
 	uint8_t _sock = 0;
 	uint8_t _peek = 0;
@@ -670,7 +670,7 @@ void CommLgc::getData(){
 /* WiFi Client */
 void CommLgc::stopClient(){
 	//TODO to be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint8_t result = 0;
 	uint8_t _sock = 0;
 	_sock = (uint8_t)_reqPckt.params[PARAM_NUMS_0].param[PARAM_NUMS_0];
@@ -697,7 +697,7 @@ void CommLgc::stopClient(){
 
 void CommLgc::clientStatus(){
   //TODO to be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
   uint8_t result = 0;
   uint8_t _sock = 0; //socket index
   _sock = (uint8_t)_reqPckt.params[PARAM_NUMS_0].param[PARAM_NUMS_0];
@@ -723,7 +723,7 @@ void CommLgc::clientStatus(){
 
 void CommLgc::sendData(){
 	//TODO to be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	int result = 0;
 	uint8_t _sock = 0; //socket index
 
@@ -748,7 +748,7 @@ void CommLgc::sendData(){
 
 void CommLgc::checkDataSent(){
 
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	//set the response struct
 	_resPckt[resp_idx++] = PARAM_NUMS_1;
 	_resPckt[resp_idx++] = PARAM_SIZE_1;
@@ -760,7 +760,7 @@ void CommLgc::checkDataSent(){
 
 void CommLgc::startClient(){
 	//TODO to be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	int result = 0;
 	int _sock;
 	uint16_t _port;
@@ -812,7 +812,7 @@ void CommLgc::startClient(){
 /* WiFi UDP Client */
 void CommLgc::remoteData(){
 	//TODO to be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	int _sock;
 
 	//retrieve sockets number
@@ -843,7 +843,7 @@ void CommLgc::remoteData(){
 
 void CommLgc::getDataBuf(){
 	//TODO: To be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	int result = 0;
 	uint8_t _sock = 0;
 	_sock = (uint8_t)_reqPckt.paramsData[PARAM_NUMS_0].data[PARAM_NUMS_0];
@@ -888,7 +888,7 @@ void CommLgc::insDataBuf(){
 	//TODO: To be tested
 
 	//NOTE maybe can use sendData, it's similar to this except the UDP
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	uint8_t result = 0;
 	uint8_t _sock = 0;
 
@@ -910,7 +910,7 @@ void CommLgc::insDataBuf(){
 
 void CommLgc::sendUdpData(){
 	//TODO: To be tested
-	uint8_t resp_idx = 2;
+	int resp_idx = 2;
 	int result = 0;
 	uint8_t _sock = 0;
 
