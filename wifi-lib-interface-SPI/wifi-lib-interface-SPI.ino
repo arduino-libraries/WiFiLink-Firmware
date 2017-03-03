@@ -11,7 +11,8 @@
 #include <Hash.h>
 #include <ESP8266WebServer.h>
 
-#define HOSTNAME "Arduino-Primo"
+//String HOSTNAME = "Arduino";
+
 
 ESP8266WebServer server(80);    //server UI
 bool SERVER_STOP = false;       //check stop server

@@ -149,6 +149,7 @@
     <script src="wifi.js"></script>
     <script type="text/javascript">
         onLoad(function () {
+            getBoardInfo();
             getWifiInfo();
             bnd($("#wifiform"), "submit", changeWifiAp);
             bnd($("#specform"), "submit", changeSpecial);
