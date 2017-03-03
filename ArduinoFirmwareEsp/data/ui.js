@@ -146,7 +146,7 @@ onLoad(function () {
     b.insertBefore(m('<div id="spinner" class="spinner" hidden></div>'), f);
     b.insertBefore(m('<div id="messages"><div id="warning" hidden></div><div id="notification" hidden></div></div>'), f);
     b.insertBefore(m('<a href="#menu" id="menuLink" class="menu-link"><span></span></a>'), f);
-    var d = m('<div id="menu">      <div class="pure-menu">        <a class="pure-menu-heading" href=".">        <img src="/logo.ico" height="128"></a>        <ul id="menu-list" class="pure-menu-list"><li class="pure-menu-item"><a href="index.html" class="pure-menu-link">Overview</a></li></ul>        <ul id="menu-list-settings" class="pure-menu-list"><li class="pure-menu-item"><a href="wifi.html" class="pure-menu-link">WiFi</a></li></ul>      </div>      <h3 id="version"></h3>    </div>    ');
+    var d = m('<div id="menu">      <div class="pure-menu">        <a class="pure-menu-heading" href=".">        <img id="logo" src="" height="128"></a>        <ul id="menu-list" class="pure-menu-list"><li class="pure-menu-item"><a href="index.html" class="pure-menu-link">Overview</a></li></ul>        <ul id="menu-list-settings" class="pure-menu-list"><li class="pure-menu-item"><a href="wifi.html" class="pure-menu-link">WiFi</a></li></ul>      </div>      <h3 id="version"></h3>    </div>    ');
     b.insertBefore(d, f);
     var g = $("#menuLink")
         , d = $("#menu");
@@ -334,4 +334,27 @@ function changeToWifiPage(a) {
 
 function showConfigWiFiMessage() {
     alert("Please connect to an existing wifi to enable this function.")
+}
+
+function getBoardInfo() {
+    ajaxReq("GET", "boardInfo", function (board) {
+        var b = JSON.parse(board);
+        $("#logo").src = b.logo;
+        change_favicon(b.icon);
+        if ($("#guide") != null) $("#guide").href = b.link;
+    }, function () {
+        console.log("Error during scan")
+    });
+}
+
+function change_favicon(img) {
+    var favicon = document.querySelector('link[rel="shortcut icon"]');
+    if (!favicon) {
+        favicon = document.createElement('link');
+        favicon.setAttribute('rel', 'shortcut icon');
+        var head = document.querySelector('head');
+        head.appendChild(favicon);
+    }
+    favicon.setAttribute('type', 'image/png');
+    favicon.setAttribute('href', img);
 }

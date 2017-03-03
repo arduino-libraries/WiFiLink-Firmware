@@ -15,7 +15,7 @@
             <div class="header">
                 <div>
                     <h1 class="jl">WELCOME</h1>
-                    <p>Please refer to the online <a href="http://www.arduino.org/learning/getting-started/getting-started-with-arduino-primo">Starter Guide</a> on Arduino.org</p>
+                    <p>Please refer to the online <a id="guide" href="http://www.arduino.org/">Starter Guide</a> on Arduino.org</p>
                 </div>
             </div>
             <div class="content" style="max-width: none !important;">
@@ -89,6 +89,7 @@
         onLoad(function () {
             makeAjaxInput("system", "description");
             makeAjaxInput("system", "name");
+            getBoardInfo();
             getWifiInfo();
             getSystemInfo();
             bnd($("#change-hostname-button"), "click", changeToWifiPage);

@@ -15,6 +15,7 @@ String staticIP_param ;
 String netmask_param;
 String gateway_param;
 String dhcp = "on";
+String HOSTNAME = "Arduino";
 
 String getContentType(String filename){
   if(server.hasArg("download")) return "application/octet-stream";
@@ -245,18 +246,25 @@ void initWBServer(){
    //set default AP
    byte mac[6];
    WiFi.macAddress(mac);
-   String tmpString = "Arduino-Primo-" +  String(mac[3], HEX) + String(mac[4], HEX) + String(mac[5], HEX);
+   String tmpString = "Arduino-" + String(BOARDMODEL)  + "-" +  String(mac[3], HEX) + String(mac[4], HEX) + String(mac[5], HEX);
    char softApssid[18];
    memset(softApssid,0,sizeof(softApssid));
    tmpString.toCharArray(softApssid, tmpString.length()+1);
-   delay(1000);
+   delay(1000); 
    WiFi.softAP(softApssid);
    WiFi.softAPConfig(default_IP, default_IP, IPAddress(255, 255, 255, 0));   //set default ip for AP mode
 
+   String tmpHostname = getNetworkConfig("hostname");
+   if( tmpHostname.length()>1) 
+      HOSTNAME = tmpHostname;
+   else
+      HOSTNAME = tmpString;
+      
     //Enable to start in AP+STA mode
    WiFi.mode(WIFI_AP_STA);
    WiFi.hostname(HOSTNAME);
-    
+   
+
    WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
 
     server.serveStatic("/fs", SPIFFS, "/");
@@ -268,6 +276,7 @@ void initWBServer(){
       String staticadd = dhcp.equals("on") ? "0.0.0.0" : staticIP_param;
       int change = WiFi.getMode() == 1 ? 3 : 1;
       String cur_ssid = (WiFi.getMode() == 2 )? "none" : WiFi.SSID();
+      
 
       server.send(200, "text/plain", String("{\"ssid\":\"" + cur_ssid + "\",\"hostname\":\"" + WiFi.hostname() + "\",\"ip\":\"" + ipadd + "\",\"mode\":\"" + toStringWifiMode(WiFi.getMode()) + "\",\"chan\":\""
                                               + WiFi.channel() + "\",\"status\":\"" + toStringWifiStatus(WiFi.status()) + "\", \"gateway\":\"" + toStringIp(WiFi.gatewayIP()) + "\", \"netmask\":\"" + toStringIp(WiFi.subnetMask()) + "\",\"rssi\":\""
@@ -385,6 +394,32 @@ void initWBServer(){
          }
        }
      });
+
+     server.on("/boardInfo", []() {
+        StaticJsonBuffer<200> jsonBuffer;
+        JsonObject& boardInfo = jsonBuffer.createObject();
+        String output = "";
+        if (BOARDMODEL == "Primo"){
+            boardInfo["name"] = "Primo";
+            boardInfo["icon"] = "logoPrimo.ico";
+            boardInfo["logo"] = "logoPrimo.png";
+            boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-primo";
+        }
+        else if (BOARDMODEL == "StarOtto"){
+            boardInfo["name"] = "Star Otto";
+            boardInfo["icon"] = "logoOtto.ico";
+            boardInfo["logo"] = "logoOtto.png";
+            boardInfo["link"] = "http://www.arduino.org/learning/getting-started/start-with-arduino-star-otto";
+        }
+        else if (BOARDMODEL =="UnoWiFi"){
+            boardInfo["name"] = "Uno WiFi";
+            boardInfo["icon"] = "logoUnoWiFi.ico";
+            boardInfo["logo"] = "logoUnoWiFi.png";
+            boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-uno-wifi";
+        }
+        boardInfo.printTo(output);
+        server.send(200, "text/json", output);
+      });
 
     //called when the url is not defined here
     //use it to load content from SPIFFS
