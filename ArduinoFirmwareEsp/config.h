@@ -26,7 +26,7 @@
   //Arduino STAR OTTO configuration parameters
   #define BOARDMODEL "STAROTTO"
   #define ESP_CH_UART
-  #define BAUDRATE_COMMUNICATION 115200
+  #define BAUDRATE_COMMUNICATION 460800
   #define WIFI_LED 14
   #define HOSTNAME "Arduino-Star-Otto"
 #elif defined(PRIMO)
