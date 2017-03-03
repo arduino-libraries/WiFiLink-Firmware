@@ -343,21 +343,22 @@ void initWBServer(){
       server.send(200, "text/plain", scanResp);
     });
 
-
     server.on("/connect", []() {
-        newSSID_param = server.arg("essid");
-        newPASSWORD_param = server.arg("passwd");
-        server.send(200, "text/plain", "1");
-        const char* newSSID = newSSID_param.c_str();
-        const char* newPASSWORD = newPASSWORD_param.c_str();
-        ETS_SPI_INTR_DISABLE();
-        WiFi.begin(newSSID,newPASSWORD);
-        WiFi.hostname(WiFi.hostname()); //set hostname
-        ETS_SPI_INTR_ENABLE();
-
-        setNetworkConfig(newSSID, newPASSWORD, "");
-    });
-
+           newSSID_param = server.arg("essid");
+           newPASSWORD_param = server.arg("passwd");
+           server.send(200, "text/plain", "1");
+           const char* newSSID = newSSID_param.c_str();
+           const char* newPASSWORD = newPASSWORD_param.c_str();
+           #if defined(ESP_CH_SPI)
+           ETS_SPI_INTR_DISABLE();
+           #endif
+           WiFi.begin(newSSID,newPASSWORD);
+           WiFi.hostname(WiFi.hostname()); //set hostname
+           #if defined(ESP_CH_SPI)
+           ETS_SPI_INTR_ENABLE();
+           #endif
+           setNetworkConfig(newSSID, newPASSWORD, "");
+       });
 
       server.on("/connstatus", []() {
         String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
