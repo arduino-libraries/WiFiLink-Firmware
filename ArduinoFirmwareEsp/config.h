@@ -3,10 +3,9 @@
  * Define board model name
  */
 
-#define BOARDMODEL "STARTOTTO"
-//#define BOARDMODEL "PRIMO"
-//#define BOARDMODEL "UNOWFI"
-//#define BOARDMODEL "UNOWFIDEVED"
+#define STAROTTO
+//#define PRIMO
+//#define UNOWIFIDEVED
 
 
 /*
@@ -22,20 +21,25 @@
  * and esp82266, with concerning parameters
  */
 
-if (BOARDMODEL == "STARTOTTO"){
+
+#if defined(STAROTTO)
   //Arduino STAR OTTO configuration parameters
+  #define BOARDMODEL "STAROTTO"
   #define ESP_CH_UART
-  #define BAUDRATE_COMMUNICATION 460800
+  #define BAUDRATE_COMMUNICATION 115200
   #define WIFI_LED 14
-  }
-else if(BOARDMODEL == "PRIMO"){
+  #define HOSTNAME "Arduino-Star-Otto"
+#elif defined(PRIMO)
   //Arduino PRIMO configuration parameters
+  #define BOARDMODEL "PRIMO"
   #define ESP_CH_SPI
   #define WIFI_LED 2
-  }
-else if(BOARDMODEL == "UNOWIFIDEVED"){
-  //Arduino UNO WIFI DEV. EDITION
+  #define HOSTNAME "Arduino-Primo"
+#elif defined(UNOWIFIDEVED)
+  //Arduino UNO WIFI DEV. EDITION configuration parameters
+  #define BOARDMODEL "UNOWIFIDEVED"
   #define ESP_CH_UART
   #define BAUDRATE_COMMUNICATION 19200
   #define WIFI_LED 14
-}
+  #define HOSTNAME "Arduino-Uno-WiFi"
+#endif
