@@ -265,8 +265,7 @@ void initWBServer(){
    WiFi.hostname(HOSTNAME);
    
 
-   WiFi.begin("DHLabs", "dhlabsrfid01");
-//   WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
+   WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
 
     server.serveStatic("/fs", SPIFFS, "/");
 
