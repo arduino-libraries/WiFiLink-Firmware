@@ -213,7 +213,7 @@ String getNetworkConfig(String param){
   File configFile = SPIFFS.open("/config.json", "r");
   if (!configFile) {
     //Serial.println("Failed to open config file");
-    return "false";
+    return "";
   }
   size_t size = configFile.size();
   std::unique_ptr<char[]> buf(new char[size]);
@@ -224,7 +224,7 @@ String getNetworkConfig(String param){
 
   if (!json.success()) {
     //Serial.println("Failed to parse config file");
-    return "false";
+    return "";
   }
 
   return json[param];
@@ -257,10 +257,10 @@ void initWBServer(){
 
   //retrieve user defined hostname
   String tmpHostname = getNetworkConfig("hostname");
-  if( tmpHostname.length()>1)
+  if( tmpHostname!="" )
     HOSTNAME = tmpHostname;
-  else
-    HOSTNAME = apSSID;
+  // else
+  //   HOSTNAME = apSSID;
 
     //Enable to start in AP+STA mode
    WiFi.mode(WIFI_AP_STA);
