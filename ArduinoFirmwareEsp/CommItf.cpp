@@ -67,10 +67,7 @@ int CommItf::createPacket(tMsgPacket *_reqPckt){
 		String raw_pckt_serial = readStringUntil(END_CMD);
 		memcpy(raw_pckt, raw_pckt_serial.c_str(),raw_pckt_serial.length());
 		#endif
-
-		for (int i=0;i<32;i++)
-			Serial1.print(raw_pckt[i],HEX);
-		Serial1.println();
+		
 		int idx = 0;
 		unsigned char tmp;
 		if(raw_pckt[idx] != START_CMD){			//TODO
