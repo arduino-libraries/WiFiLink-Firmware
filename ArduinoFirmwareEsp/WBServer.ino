@@ -2,6 +2,7 @@
 String newSSID_param;
 String newPASSWORD_param;
 IPAddress default_IP(192,168,240,1);
+bool SERVER_STOP = false;       //check stop server
 
 // extern "C" void system_set_os_print(uint8 onoff);    //TODO to test without
 // extern "C" void ets_install_putc1(void* routine);
@@ -161,8 +162,14 @@ IPAddress stringToIP(String address) {
 }
 
 void handleWBServer(){
-
-  server.handleClient();
+  if(CommunicationLogic.UI_alert){			//stop UI SERVER
+    if(!SERVER_STOP){
+      server.stop();
+      SERVER_STOP = true;
+    }
+  }
+  else
+    server.handleClient();
   wifiLed();
 }
 
@@ -184,7 +191,6 @@ void wifiLed(){
   }
   else //if (wifi_status !=WL_CONNECTED){
     digitalWrite(WIFI_LED, LOW);
-
 }
 
 void initMDNS(){
@@ -273,8 +279,6 @@ void initWBServer(){
       WiFi.begin(getNetworkConfig("ssid").c_str());
     }
   }
-
-  server.serveStatic("/fs", SPIFFS, "/");
 
   //"wifi/info" information
   server.on("/wifi/info", []() {
