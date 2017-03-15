@@ -12,7 +12,6 @@
 
 
 ESP8266WebServer server(80);    //server UI
-bool SERVER_STOP = false;       //check stop server
 
 void setup() {
 
@@ -27,13 +26,6 @@ void loop() {
 
   ArduinoOTA.handle();
   CommunicationLogic.handle();
-  if(CommunicationLogic.UI_alert){			//stop UI SERVER
-    if(!SERVER_STOP){
-      server.stop();
-      SERVER_STOP = true;
-    }
-  }
-  else
-    handleWBServer();
+  handleWBServer();
 
 }
