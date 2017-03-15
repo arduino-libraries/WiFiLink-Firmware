@@ -314,8 +314,7 @@ pre.console a {
     text-transform: none !important
 }
 .lock-icon {
-    /*background-image: url("/wifi/icons.png");*/
-    background-image: url("icons.png");
+    background-image: url("img/icons.png");
     background-color: transparent;
     width: 32px;
     height: 32px;
