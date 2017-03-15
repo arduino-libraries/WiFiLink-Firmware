@@ -3,7 +3,7 @@
  * Define board model name
  */
 
-#define STAROTTO
+//#define STAROTTO
 //#define PRIMO
 //#define UNOWIFIDEVED
 
