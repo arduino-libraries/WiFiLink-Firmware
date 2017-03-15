@@ -312,9 +312,13 @@ void initWBServer(){
       server.send(200, "text/plain", newhostname);
     });
 
+    server.on("/wifi/netNumber", []() {
+        tot = WiFi.scanNetworks();
+        server.send(200, "text/plain", String(tot));
+    });
+    
     server.on("/wifi/scan", []() {
       String scanResp = "";
-      tot = WiFi.scanNetworks();
 
       if (tot == 0) {
         server.send(200, "text/plain", "No networks found");

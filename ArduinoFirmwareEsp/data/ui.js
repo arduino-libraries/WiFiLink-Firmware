@@ -178,9 +178,6 @@ onLoad(function () {
         removeClass(d, "active");
         removeClass(g, "active")
     }
-    ajaxJson("GET", "/wifi/info", function (a) {
-        document.title = a.hostname
-    });
 });
 
 function showWifiInfo(f) {
@@ -219,6 +216,7 @@ function showWifiInfo(f) {
             })
         }
     }
+    document.title = a.hostname
 }
 
 function getWifiInfo() {

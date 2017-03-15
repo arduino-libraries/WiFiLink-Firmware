@@ -98,14 +98,20 @@ function scanAPs() {
         scanTimeout = window.setTimeout(scanAPs, 1000);
         return
     }
-    scanTimeout = null;
-    scanReqCnt = 0;
-    window.scrollTo(0, 0);
-    ajaxReq("GET", "wifi/scan", function (a) {
-        scanResult();
-    }, function (b, a) {
-        scanResult();
+    ajaxReq("GET", "wifi/netNumber", function (a){
+        scanTimeout = null;
+        scanReqCnt = 0;
+        window.scrollTo(0, 0);
+        ajaxReq("GET", "wifi/scan", function (a) {
+            scanResult();
+        }, function (b, a) {
+            scanResult();
+        })
+        
+    }, function(b,a){
+        scanAPs();
     })
+    
 }
 
 function getStatus() {
