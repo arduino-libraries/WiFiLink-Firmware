@@ -85,15 +85,17 @@ function scanResult() {
             }
         }
         else {
-            scanResult();
+            showWarning("AP's not found")
         }
     }, function (b, a) {
-        scanResult();
+        $("#spinner").setAttribute("hidden", "");
+        showWarning("Please rescan")
     })
 }
 
 function scanAPs() {
     $("#spinner").removeAttribute("hidden");
+    window.scrollTo(0, 0);
     if (blockScan) {
         scanTimeout = window.setTimeout(scanAPs, 1000);
         return
@@ -101,15 +103,10 @@ function scanAPs() {
     ajaxReq("GET", "wifi/netNumber", function (a){
         scanTimeout = null;
         scanReqCnt = 0;
-        window.scrollTo(0, 0);
-        ajaxReq("GET", "wifi/scan", function (a) {
-            scanResult();
-        }, function (b, a) {
-            scanResult();
-        })
-        
+        scanResult();
     }, function(b,a){
-        scanAPs();
+        $("#spinner").setAttribute("hidden", "");
+        showWarning("Error during scanning, please retry.")
     })
     
 }
