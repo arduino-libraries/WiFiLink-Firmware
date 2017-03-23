@@ -216,7 +216,7 @@ function showWifiInfo(f) {
             })
         }
     }
-    document.title = a.hostname
+    document.title = f.hostname
 }
 
 function getWifiInfo() {
