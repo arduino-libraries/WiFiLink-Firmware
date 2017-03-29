@@ -195,8 +195,12 @@ void wifiLed(){
 }
 
 void initMDNS(){
+
+    MDNS.begin(HOSTNAME.c_str());
     MDNS.setInstanceName(HOSTNAME);
-    MDNS.enableArduino(80, false);
+    //MDNS.enableArduino(8266); //done in ArduinoOTA.begin()
+    MDNS.addServiceTxt("arduino", "tcp", "fw_version", FW_VERSION);
+
 }
 
 bool setNetworkConfig(String ssid, String password, String hostname){
@@ -267,10 +271,15 @@ void initWBServer(){
   // else
   //   HOSTNAME = SSIDNAME;
 
-    //Enable to start in AP+STA mode
-   WiFi.mode(WIFI_AP_STA);
-   WiFi.hostname(HOSTNAME);
+  //set MDNS
+  initMDNS();
 
+  //Enable to start in AP+STA mode
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.hostname(HOSTNAME);
+  #if defined(ESP_CH_SPI)
+  ETS_SPI_INTR_DISABLE();
+  #endif
   if(getNetworkConfig("ssid") != ""){
     if(getNetworkConfig("password") != ""){
       WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
@@ -278,6 +287,9 @@ void initWBServer(){
       WiFi.begin(getNetworkConfig("ssid").c_str());
     }
   }
+  #if defined(ESP_CH_SPI)
+  ETS_SPI_INTR_ENABLE();
+  #endif
 
   //"wifi/info" information
   server.on("/wifi/info", []() {
@@ -308,10 +320,10 @@ void initWBServer(){
 
     server.on("/system/update", []() {
       String newhostname = server.arg("name");
+      MDNS.begin(newhostname.c_str());
+      MDNS.setInstanceName(newhostname);
       WiFi.hostname(newhostname);
       setNetworkConfig("", "", newhostname);
-      MDNS.begin(newhostname.c_str());
-      initMDNS();
       server.send(200, "text/plain", newhostname);
     });
 
@@ -319,7 +331,7 @@ void initWBServer(){
         tot = WiFi.scanNetworks();
         server.send(200, "text/plain", String(tot));
     });
-    
+
     server.on("/wifi/scan", []() {
       String scanResp = "";
 
@@ -360,7 +372,7 @@ void initWBServer(){
            ETS_SPI_INTR_DISABLE();
            #endif
            WiFi.begin(newSSID,newPASSWORD);
-           WiFi.hostname(WiFi.hostname()); //set hostname
+           //WiFi.hostname(WiFi.hostname()); //set hostname
            #if defined(ESP_CH_SPI)
            ETS_SPI_INTR_ENABLE();
            #endif
