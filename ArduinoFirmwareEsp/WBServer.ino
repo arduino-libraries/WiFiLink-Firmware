@@ -412,20 +412,20 @@ void initWBServer(){
         String output = "";
         if (BOARDMODEL == "PRIMO"){
             boardInfo["name"] = "Primo";
-            boardInfo["icon"] = "logoPrimo.ico";
-            boardInfo["logo"] = "logoPrimo.png";
+            boardInfo["icon"] = "/img/logoPrimo.ico";
+            boardInfo["logo"] = "/img/logoPrimo.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-primo";
         }
         else if (BOARDMODEL == "STAROTTO"){
             boardInfo["name"] = "Star Otto";
-            boardInfo["icon"] = "logoOtto.ico";
-            boardInfo["logo"] = "logoOtto.png";
+            boardInfo["icon"] = "/img/logoOtto.ico";
+            boardInfo["logo"] = "/img/logoOtto.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-star-otto";
         }
         else if (BOARDMODEL =="UNOWIFIDEVED"){
             boardInfo["name"] = "Uno WiFi";
-            boardInfo["icon"] = "logoUnoWiFi.ico";
-            boardInfo["logo"] = "logoUnoWiFi.png";
+            boardInfo["icon"] = "/img/logoUnoWiFi.ico";
+            boardInfo["logo"] = "/img/logoUnoWiFi.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-uno-wifi";
         }
         boardInfo.printTo(output);
