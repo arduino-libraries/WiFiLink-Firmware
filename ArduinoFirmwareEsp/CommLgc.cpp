@@ -25,8 +25,6 @@ DEALINGS IN THE SOFTWARE
 #include "CommLgc.h"
 #include "CommCmd.h"
 
-char FW_VERSION[] = "1.0.0";
-
 //cached values
 IPAddress _reqHostIp;
 

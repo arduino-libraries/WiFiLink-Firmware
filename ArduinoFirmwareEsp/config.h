@@ -1,5 +1,12 @@
 
 /*
+ * Firmware version and build date
+ */
+
+#define BUILD_DATE "20170321"
+#define FW_VERSION "1.0.0"
+
+/*
  * Define board model name
  */
 
