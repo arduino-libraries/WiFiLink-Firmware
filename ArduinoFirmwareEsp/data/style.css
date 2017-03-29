@@ -144,7 +144,8 @@ fieldset fields {
 }
 #layout {
     position: relative;
-    padding-left: 0
+    padding-left: 0;
+    width: 80%
 }
 #layout.active #menu {
     left: 150px;
@@ -403,7 +404,7 @@ pre.console a {
         padding-right: 2em
     }
     #layout {
-        padding-left: 150px;
+        padding-left: 16%;
         left: 0
     }
     #menu {
