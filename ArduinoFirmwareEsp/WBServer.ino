@@ -436,6 +436,8 @@ void initWBServer(){
         server.send(404, "text/plain", "FileNotFound");
     });
 
+    #if defined(PRIMO)
     server.begin();
+    #endif
 
 }
