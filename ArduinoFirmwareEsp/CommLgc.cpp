@@ -307,7 +307,7 @@ void CommLgc::scanNetwork(){
 	//scanNetworks command
 	numNets = WiFi.scanNetworks();
 	//fix the maximum network number to 10
-	uint8_t numNetsMax = 10
+	uint8_t numNetsMax = 10;
 
 	numNets = (numNets <= numNetsMax) ? numNets : numNetsMax;
 	_resPckt[resp_idx++]=numNets;
