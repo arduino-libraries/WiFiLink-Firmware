@@ -18,7 +18,6 @@ void setup() {
   ArduinoOTA.begin();
   CommunicationLogic.begin();
   initWBServer();               //UI begin
-  initMDNS();                   //set MDNS
 
 }
 
