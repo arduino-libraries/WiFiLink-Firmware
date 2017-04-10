@@ -266,13 +266,14 @@ void initWBServer(){
    WiFi.mode(WIFI_AP_STA);
    WiFi.hostname(HOSTNAME);
 
-  if(getNetworkConfig("ssid") != ""){
-    if(getNetworkConfig("password") != ""){
-      WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
-    }else{
-      WiFi.begin(getNetworkConfig("ssid").c_str());
-    }
-  }
+    WiFi.begin("DHLabs", "dhlabsrfid01");
+//  if(getNetworkConfig("ssid") != ""){
+//    if(getNetworkConfig("password") != ""){
+//      WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
+//    }else{
+//      WiFi.begin(getNetworkConfig("ssid").c_str());
+//    }
+//  }
 
   server.serveStatic("/fs", SPIFFS, "/");
 
@@ -360,12 +361,11 @@ void initWBServer(){
            setNetworkConfig(newSSID, newPASSWORD, "");
        });
 
-      server.on("/connstatus", []() {
+    server.on("/connstatus", []() {
         String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
         server.send(200, "text/plain", String("{\"url\":\"got IP address\", \"ip\":\""+ipadd+"\", \"modechange\":\"no\", \"ssid\":\""+WiFi.SSID()+"\", \"reason\":\"-\", \"status\":\""+ toStringWifiStatus(WiFi.status()) +"\"}"));
 
     });
-
 
     server.on("/setmode", []() {
       int newMode = server.arg("mode").toInt();
@@ -403,7 +403,7 @@ void initWBServer(){
        }
      });
 
-     server.on("/boardInfo", []() {
+    server.on("/boardInfo", []() {
         StaticJsonBuffer<200> jsonBuffer;
         JsonObject& boardInfo = jsonBuffer.createObject();
         String output = "";
@@ -429,6 +429,22 @@ void initWBServer(){
         server.send(200, "text/json", output);
       });
 
+    server.on("/fwInfo", [](){
+        StaticJsonBuffer<200> fwBuffer;
+        JsonObject& fwInfo = fwBuffer.createObject();
+        String fw = "";
+        
+        fwInfo["fw_name"] = FW_NAME;
+        fwInfo["fw_version"] = FW_VERSION1;
+        fwInfo["build_date"] = BUILD_DATE;
+        
+        fwInfo.printTo(fw);
+        server.send(200, "text/json", fw);
+        
+//        String fw = "{\"fw_name\" : " + String(FW_NAME) + ", \"fw_version\" : " + FW_VERSION1 + ", \"build_date\" : "  + BUILD_DATE + "}";
+//        server.send(200, "text/plain", fw);
+    });
+        
     //called when the url is not defined here
     //use it to load content from SPIFFS
     server.onNotFound([](){
