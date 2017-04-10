@@ -306,8 +306,10 @@ void CommLgc::scanNetwork(){
 	int resp_idx = 2;
 	//scanNetworks command
 	numNets = WiFi.scanNetworks();
-	//fix the maximum network number to MAX_PARAMS
-	numNets = (numNets <= MAX_PARAMS) ? numNets : MAX_PARAMS;
+	//fix the maximum network number to 10
+	uint8_t numNetsMax = 10;
+
+	numNets = (numNets <= numNetsMax) ? numNets : numNetsMax;
 	_resPckt[resp_idx++]=numNets;
 	for (int i=0; i<numNets; i++)
 	{
@@ -729,10 +731,8 @@ void CommLgc::sendData(){
 
 	_sock = (uint8_t)_reqPckt.paramsData[PARAM_NUMS_0].data[PARAM_NUMS_0];
 	if(mapWiFiClients[_sock]){
-		char buffer_tmp[_reqPckt.paramsData[PARAM_NUMS_1].dataLen];
-		memcpy(buffer_tmp,_reqPckt.paramsData[PARAM_NUMS_1].data,_reqPckt.paramsData[PARAM_NUMS_1].dataLen);
 		if(mapWiFiClients[_sock].status()== 4) //TODO
-			result = mapWiFiClients[_sock].write(buffer_tmp,_reqPckt.paramsData[PARAM_NUMS_1].dataLen);
+			result = mapWiFiClients[_sock].write(_reqPckt.paramsData[PARAM_NUMS_1].data,_reqPckt.paramsData[PARAM_NUMS_1].dataLen);
 		if(result == _reqPckt.paramsData[PARAM_NUMS_1].dataLen)
 			tcpResult = 1;
 		else

@@ -1,7 +1,9 @@
-
+// uint8_t MAC_array[6];   //mac_address
+// char macAddress[12];    //mac_address
 String newSSID_param;
 String newPASSWORD_param;
 IPAddress default_IP(192,168,240,1);
+bool SERVER_STOP = false;       //check stop server
 
 // extern "C" void system_set_os_print(uint8 onoff);    //TODO to test without
 // extern "C" void ets_install_putc1(void* routine);
@@ -161,8 +163,14 @@ IPAddress stringToIP(String address) {
 }
 
 void handleWBServer(){
-
-  server.handleClient();
+  if(CommunicationLogic.UI_alert){			//stop UI SERVER
+    if(!SERVER_STOP){
+      server.stop();
+      SERVER_STOP = true;
+    }
+  }
+  else
+    server.handleClient();
   wifiLed();
 }
 
@@ -184,7 +192,6 @@ void wifiLed(){
   }
   else //if (wifi_status !=WL_CONNECTED){
     digitalWrite(WIFI_LED, LOW);
-
 }
 
 void initMDNS(){
@@ -245,11 +252,9 @@ void initWBServer(){
 
   tot = WiFi.scanNetworks();
   //set default AP
-  byte mac[6];
-  WiFi.macAddress(mac);
-  String apSSID = String(SSIDNAME) + "-" +  String(mac[3], HEX) + String(mac[4], HEX) + String(mac[5], HEX);
+  String mac = WiFi.macAddress();
+  String apSSID = String(SSIDNAME) + "-" + String(mac[9])+String(mac[10])+String(mac[12])+String(mac[13])+String(mac[15])+String(mac[16]);
   char softApssid[18];
-  //memset(softApssid,0,sizeof(softApssid));
   apSSID.toCharArray(softApssid, apSSID.length()+1);
   delay(1000);
   WiFi.softAP(softApssid);
@@ -260,22 +265,19 @@ void initWBServer(){
   if( tmpHostname!="" )
     HOSTNAME = tmpHostname;
   // else
-  //   HOSTNAME = apSSID;
+  //   HOSTNAME = SSIDNAME;
 
     //Enable to start in AP+STA mode
    WiFi.mode(WIFI_AP_STA);
    WiFi.hostname(HOSTNAME);
 
-    WiFi.begin("DHLabs", "dhlabsrfid01");
-//  if(getNetworkConfig("ssid") != ""){
-//    if(getNetworkConfig("password") != ""){
-//      WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
-//    }else{
-//      WiFi.begin(getNetworkConfig("ssid").c_str());
-//    }
-//  }
-
-  server.serveStatic("/fs", SPIFFS, "/");
+  if(getNetworkConfig("ssid") != ""){
+    if(getNetworkConfig("password") != ""){
+      WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
+    }else{
+      WiFi.begin(getNetworkConfig("ssid").c_str());
+    }
+  }
 
   //"wifi/info" information
   server.on("/wifi/info", []() {
@@ -313,9 +315,13 @@ void initWBServer(){
       server.send(200, "text/plain", newhostname);
     });
 
+    server.on("/wifi/netNumber", []() {
+        tot = WiFi.scanNetworks();
+        server.send(200, "text/plain", String(tot));
+    });
+    
     server.on("/wifi/scan", []() {
       String scanResp = "";
-      tot = WiFi.scanNetworks();
 
       if (tot == 0) {
         server.send(200, "text/plain", "No networks found");
@@ -409,20 +415,20 @@ void initWBServer(){
         String output = "";
         if (BOARDMODEL == "PRIMO"){
             boardInfo["name"] = "Primo";
-            boardInfo["icon"] = "logoPrimo.ico";
-            boardInfo["logo"] = "logoPrimo.png";
+            boardInfo["icon"] = "/img/logoPrimo.ico";
+            boardInfo["logo"] = "/img/logoPrimo.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-primo";
         }
         else if (BOARDMODEL == "STAROTTO"){
             boardInfo["name"] = "Star Otto";
-            boardInfo["icon"] = "logoOtto.ico";
-            boardInfo["logo"] = "logoOtto.png";
+            boardInfo["icon"] = "/img/logoOtto.ico";
+            boardInfo["logo"] = "/img/logoOtto.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-star-otto";
         }
         else if (BOARDMODEL =="UNOWIFIDEVED"){
             boardInfo["name"] = "Uno WiFi";
-            boardInfo["icon"] = "logoUnoWiFi.ico";
-            boardInfo["logo"] = "logoUnoWiFi.png";
+            boardInfo["icon"] = "/img/logoUnoWiFi.ico";
+            boardInfo["logo"] = "/img/logoUnoWiFi.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-uno-wifi";
         }
         boardInfo.printTo(output);

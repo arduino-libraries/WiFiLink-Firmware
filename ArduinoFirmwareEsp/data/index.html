@@ -5,8 +5,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <link rel="stylesheet" href="pure.css">
     <link rel="stylesheet" href="style.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="ui.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
@@ -94,11 +94,6 @@
             getSystemInfo();
             bnd($("#change-hostname-button"), "click", changeToWifiPage);
             bnd($("#change-network-button"), "click", changeToWifiPage);
-            ajaxReq("GET", "wifi/scan", function (a) {
-                console.log("Scan done")
-            }, function () {
-                console.log("Error during scan")
-            });
         });
     </script>
 </body>
