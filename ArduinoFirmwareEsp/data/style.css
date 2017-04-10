@@ -154,6 +154,9 @@ fieldset fields {
 #layout.active .menu-link {
     left: 150px
 }
+#layout.active #version {
+    padding: 0 20%;
+}
 div.tt {
     font-family: monospace;
     font-size: 120%;
@@ -425,6 +428,11 @@ pre.console a {
         left: 150px
     }
 }
+@media (max-height: 600px){
+    #version {
+        visibility : hidden;
+    }
+}
 #messages {
     position: absolute;
     left: 25%;
@@ -495,10 +503,10 @@ pre.console a {
     color: #00979c;
     font-weight: normal !important;
     text-align: center;
-    padding: 0 5%;
+    padding: 0 7%;
     /*font-family: TyponineSansMonoText;*/
-    position: relative;
-    margin-bottom: 0;
+    position: fixed;
+    margin-bottom: 2%;
     margin-top: 80%
 }
 hr {

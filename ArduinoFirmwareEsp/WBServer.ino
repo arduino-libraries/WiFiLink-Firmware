@@ -431,25 +431,14 @@ void initWBServer(){
             boardInfo["logo"] = "/img/logoUnoWiFi.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-uno-wifi";
         }
+        
+        boardInfo["fw_name"] = FW_NAME;
+        boardInfo["fw_version"] = FW_VERSION1;
+        boardInfo["build_date"] = BUILD_DATE;
+            
         boardInfo.printTo(output);
         server.send(200, "text/json", output);
       });
-
-    server.on("/fwInfo", [](){
-        StaticJsonBuffer<200> fwBuffer;
-        JsonObject& fwInfo = fwBuffer.createObject();
-        String fw = "";
-        
-        fwInfo["fw_name"] = FW_NAME;
-        fwInfo["fw_version"] = FW_VERSION1;
-        fwInfo["build_date"] = BUILD_DATE;
-        
-        fwInfo.printTo(fw);
-        server.send(200, "text/json", fw);
-        
-//        String fw = "{\"fw_name\" : " + String(FW_NAME) + ", \"fw_version\" : " + FW_VERSION1 + ", \"build_date\" : "  + BUILD_DATE + "}";
-//        server.send(200, "text/plain", fw);
-    });
         
     //called when the url is not defined here
     //use it to load content from SPIFFS

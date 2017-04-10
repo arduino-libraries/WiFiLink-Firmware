@@ -178,26 +178,6 @@ onLoad(function () {
         removeClass(d, "active");
         removeClass(g, "active")
     }
-
-    ajaxJson("GET", "/wifi/info", function (a) {
-        document.title = a.hostname
-    });
-    
-//    ajaxReq("GET", "/fwInfo", function (i) {
-//        var ij = JSON.parse(i);
-//        var br = document.createElement("br"),
-//            date = document.createElement('span').innerText = ij.build_date;
-//        $("#version").textContent = ij.fw_name + " - " + ij.fw_version;
-//        $("#version").appendChild(br);
-//        $("#version").appendChild(date);
-//    });
-    
-    ajaxJson("GET", "/fwInfo", function (i) {
-//        var br = document.createElement("br")
-//            date = document.createElement('span').innerText = i.build_date;
-        $("#version").textContent = i.fw_name + " - " + i.fw_version + ANDATA_A_CAPO + i.build_date;
-//        $("#version").appendChild(br);
-    });
 });
 
 function showWifiInfo(f) {
@@ -360,6 +340,7 @@ function getBoardInfo() {
         $("#logo").src = b.logo;
         change_favicon(b.icon);
         if ($("#guide") != null) $("#guide").href = b.link;
+        $("#version").innerHTML = b.fw_name + " - " + b.fw_version + "<br />" + b.build_date;
     }, function () {
         console.log("Error during scan")
     });
