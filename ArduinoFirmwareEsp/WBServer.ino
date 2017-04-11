@@ -367,12 +367,11 @@ void initWBServer(){
            setNetworkConfig(newSSID, newPASSWORD, "");
        });
 
-      server.on("/connstatus", []() {
+    server.on("/connstatus", []() {
         String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
         server.send(200, "text/plain", String("{\"url\":\"got IP address\", \"ip\":\""+ipadd+"\", \"modechange\":\"no\", \"ssid\":\""+WiFi.SSID()+"\", \"reason\":\"-\", \"status\":\""+ toStringWifiStatus(WiFi.status()) +"\"}"));
 
     });
-
 
     server.on("/setmode", []() {
       int newMode = server.arg("mode").toInt();
@@ -410,7 +409,7 @@ void initWBServer(){
        }
      });
 
-     server.on("/boardInfo", []() {
+    server.on("/boardInfo", []() {
         StaticJsonBuffer<200> jsonBuffer;
         JsonObject& boardInfo = jsonBuffer.createObject();
         String output = "";
@@ -432,10 +431,15 @@ void initWBServer(){
             boardInfo["logo"] = "/img/logoUnoWiFi.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-uno-wifi";
         }
+        
+        boardInfo["fw_name"] = FW_NAME;
+        boardInfo["fw_version"] = FW_VERSION1;
+        boardInfo["build_date"] = BUILD_DATE;
+            
         boardInfo.printTo(output);
         server.send(200, "text/json", output);
       });
-
+        
     //called when the url is not defined here
     //use it to load content from SPIFFS
     server.onNotFound([](){

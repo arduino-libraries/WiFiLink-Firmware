@@ -5,7 +5,7 @@
 
 //#define STAROTTO
 //#define PRIMO
-//#define UNOWIFIDEVED
+#define UNOWIFIDEVED
 
 
 /*
@@ -47,3 +47,7 @@
   #define WIFI_LED 14
   #define SSIDNAME "Arduino-Uno-WiFi"
 #endif
+
+#define BUILD_DATE "20170321"
+#define FW_VERSION1 "1.0.0"
+#define FW_NAME "wifilink"
