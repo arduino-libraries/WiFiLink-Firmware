@@ -3,15 +3,16 @@
  * Firmware version and build date
  */
 
-#define BUILD_DATE "20170321"
-#define FW_VERSION "1.0.0"
+#define BUILD_DATE  "20170405"
+#define FW_VERSION  "1.0.1"
+#define FW_NAME     "wifilink"
 
 /*
  * Define board model name
  */
 
 //#define STAROTTO
-//#define PRIMO
+#define PRIMO
 //#define UNOWIFIDEVED
 
 
@@ -19,9 +20,14 @@
  * Enable/Disable Debug
  */
 
-//#define DEBUG
-//#define BAUDRATE_DEBUG 115200
+#define DEBUG
+#define BAUDRATE_DEBUG 115200
 
+/*
+ * Define board hostname
+ */
+
+#define DEF_HOSTNAME "arduino"
 
 /*
  * Defines the communication channel between microcontroller
