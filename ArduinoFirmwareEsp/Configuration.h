@@ -21,54 +21,26 @@ DEALINGS IN THE SOFTWARE
 
 */
 
-#include "Arduino.h"
-#include "utility/wifi_utils.h"
-#include "config.h"
+#include <Arduino.h>
+#include <FS.h>
+#include <ArduinoJson.h>
 
-#ifndef H_COMM_ITF_H
-#define H_COMM_ITF_H
+#ifndef H_CONFIGURATION_H
+#define H_CONFIGURATION_H
 
-// enum CHANNEL {
-//   CH_SERIAL = 0,
-//   CH_SPI
-// };
-//
-// enum MCU {
-//   AVR328P = 0,
-//   NRF52,
-//   STM32,
-//   SAMD21
-// };
+#define EMPTY ""
+#define JSONEMPTY "{}"
+#define MAXVALUESIZE 256
+#define CONFIGFILENAME "/config.json"
 
-class CommItf {
+class Configuration {
 
-public:
-
-	CommItf();
-	bool begin();
-	int read(tMsgPacket *_pck);
-	void write(uint8_t *_pck, int transfer_size);
-  void end();
-  bool available();
-
-private:
-
-  int createPacket(tMsgPacket *_pck);
-
-  /*SPI*/
-  #if defined ESP_CH_SPI
-  void SPISlaveInit();
-  void SPISlaveWrite(uint8_t* _resPckt,int transfer_size);
-  #endif
-
-  /*Serial*/
-  #if defined ESP_CH_UART
-  String readStringUntil(char);
-  int timedRead();
-  #endif
+  public:
+    bool setParam(String param, String value);
+    String getParam(String param);
 
 };
 
-extern CommItf CommunicationInterface;
+extern Configuration Config;
 
 #endif
