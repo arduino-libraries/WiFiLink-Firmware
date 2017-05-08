@@ -9,13 +9,12 @@ bool SERVER_STOP = false;       //check stop server
 
 // extern "C" void system_set_os_print(uint8 onoff);    //TODO to test without
 // extern "C" void ets_install_putc1(void* routine);
-
-int tot;        //need to save the number of the networks scanned
+int tot = 0;
 String staticIP_param ;
 String netmask_param;
 String gateway_param;
 String dhcp = "on";
-bool connect = false;
+bool connect_wifi = false;
 //String HOSTNAME = "arduino";
 
 
@@ -38,29 +37,11 @@ String getContentType(String filename){
 
 bool handleFileRead(String path){
   if(path.endsWith("/")) path += "index.html";
-  //Serial.println("13");
   String contentType = getContentType(path);
-  //Serial.println("14");
-  //String pathWithGz = path + ".gz";
-  //Serial.println("15");
-  //ETS_SPI_INTR_DISABLE();
-  //if(SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)){
-    //Serial.println("16");
-    // if(SPIFFS.exists(pathWithGz))
-    //   path += ".gz";
-    //Serial.println("17");
-    File file = SPIFFS.open(path, "r");
-    //Serial.println("18");
-    ETS_SPI_INTR_DISABLE();
-    size_t sent = server.streamFile(file, contentType);
-    ETS_SPI_INTR_ENABLE();
-    //Serial.println("19");
-    file.close();
-    //Serial.println("20");
-    return true;
-  //}
-  //return false;
-  //ETS_SPI_INTR_ENABLE();
+  File file = SPIFFS.open(path, "r");
+  size_t sent = server.streamFile(file, contentType);
+  file.close();
+  return true;
 }
 
 String toStringIp(IPAddress ip) {
@@ -174,6 +155,12 @@ IPAddress stringToIP(String address) {
 }
 
 void handleWebServer(){
+  if(connect_wifi){
+    ETS_SPI_INTR_DISABLE();
+    WiFi.begin(newSSID_param.c_str(),newPASSWORD_param.c_str());
+    connect_wifi = false;
+    ETS_SPI_INTR_ENABLE();
+  }
   if(CommunicationLogic.UI_alert){			//stop UI SERVER
     if(!SERVER_STOP){
       server.stop();
@@ -191,8 +178,6 @@ void initWebServer(){
 
   //"wifi/info" information
   server.on("/wifi/info", []() {
-
-    //ETS_SPI_INTR_DISABLE();
     String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
     String staticadd = dhcp.equals("on") ? "0.0.0.0" : staticIP_param;
     int change = WiFi.getMode() == 1 ? 3 : 1;
@@ -204,49 +189,33 @@ void initWebServer(){
                                             + WiFi.RSSI() + "\",\"mac\":\"" + WiFi.macAddress() + "\",\"phy\":\"" + WiFi.getPhyMode() + "\", \"dhcp\": \"" + dhcp + "\", \"staticip\":\"" + staticadd +
                                             + "\", \"warn\": \"" + "<a href='#' class='pure-button button-primary button-larger-margin' onclick='changeWifiMode(" + change + ")'>Switch to " + toStringWifiMode(change) + " mode</a>\""
                                             + "}" ));
-      //ETS_SPI_INTR_ENABLE();
-
     });
 
     //"system/info" information
     server.on("/system/info", []() {
-
-            //ETS_SPI_INTR_DISABLE();
-            server.send(200, "text/plain", String("{\"heap\":\""+ String(ESP.getFreeHeap()/1024)+" KB\",\"id\":\"" + String(ESP.getFlashChipId()) + "\",\"size\":\"" + (ESP.getFlashChipSize() / 1024 / 1024) + " MB\",\"baud\":\"9600\"}"));
-            //ETS_SPI_INTR_ENABLE();
-
+      server.send(200, "text/plain", String("{\"heap\":\""+ String(ESP.getFreeHeap()/1024)+" KB\",\"id\":\"" + String(ESP.getFlashChipId()) + "\",\"size\":\"" + (ESP.getFlashChipSize() / 1024 / 1024) + " MB\",\"baud\":\"9600\"}"));
     });
+
     server.on("/heap", []() {
-
       server.send(200, "text/plain", String(ESP.getFreeHeap()));
-
     });
 
     server.on("/system/update", []() {
-
       String newhostname = server.arg("name");
       WiFi.hostname(newhostname);
       MDNS.begin(newhostname.c_str());
       MDNS.setInstanceName(newhostname);
-      // Config.getParam("hostname");  //TODO remove
-      // Config.getParam("ssid");
-      // Config.getParam("password");
       server.send(200, "text/plain", newhostname);
       Config.setParam("hostname", newhostname);
-
     });
 
     server.on("/wifi/netNumber", []() {
-
         tot = WiFi.scanNetworks();
         server.send(200, "text/plain", String(tot));
-
     });
 
     server.on("/wifi/scan", []() {
-
       String scanResp = "";
-
       if (tot == 0) {
         server.send(200, "text/plain", "No networks found");
       }
@@ -272,32 +241,25 @@ void initWebServer(){
       scanResp += "]}}";
       //ETS_SPI_INTR_ENABLE();
       server.send(200, "text/plain", scanResp);
-
     });
 
     server.on("/connect", []() {
-
       newSSID_param = server.arg("essid");
       newPASSWORD_param = server.arg("passwd");
       server.send(200, "text/plain", "1");
-      WiFi.begin(newSSID_param.c_str(),newPASSWORD_param.c_str());
-      //WiFi.softAPConfig(default_IP, default_IP, IPAddress(255, 255, 255, 0));   //set default ip for AP mode
-      //WiFi.hostname(WiFi.hostname());
+      //WiFi.begin(newSSID_param.c_str(),newPASSWORD_param.c_str());
       Config.setParam("ssid", newSSID_param);
       Config.setParam("password", newPASSWORD_param);
-
+      connect_wifi = true;
     });
 
     server.on("/connstatus", []() {
-
         String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
         server.send(200, "text/plain", String("{\"url\":\"got IP address\", \"ip\":\""+ipadd+"\", \"modechange\":\"no\", \"ssid\":\""+WiFi.SSID()+"\", \"reason\":\"-\", \"status\":\""+ toStringWifiStatus(WiFi.status()) +"\"}"));
-
     });
 
 
     server.on("/setmode", []() {
-
       int newMode = server.arg("mode").toInt();
 
       switch (newMode){
@@ -315,7 +277,6 @@ void initWebServer(){
     });
 
     server.on("/special", []() {
-
        dhcp = server.arg("dhcp");
        staticIP_param = server.arg("staticip");
        netmask_param = server.arg("netmask");
@@ -333,11 +294,9 @@ void initWebServer(){
            delay ( 5000 );
          }
        }
-
      });
 
      server.on("/boardInfo", []() {
-
         StaticJsonBuffer<200> jsonBuffer;
         JsonObject& boardInfo = jsonBuffer.createObject();
         String output = "";
@@ -361,16 +320,13 @@ void initWebServer(){
         }
         boardInfo.printTo(output);
         server.send(200, "text/json", output);
-
       });
 
     //called when the url is not defined here
     //use it to load content from SPIFFS
     server.onNotFound([](){
-
       if(!handleFileRead(server.uri()))
         server.send(404, "text/plain", "FileNotFound");
-
     });
 
     server.begin();
