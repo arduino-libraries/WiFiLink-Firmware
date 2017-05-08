@@ -318,6 +318,11 @@ void initWebServer(){
             boardInfo["logo"] = "/img/logoUnoWiFi.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-uno-wifi";
         }
+         
+        boardInfo["fw_name"] = FW_NAME;
+        boardInfo["fw_version"] = FW_VERSION;
+        boardInfo["build_date"] = BUILD_DATE;
+         
         boardInfo.printTo(output);
         server.send(200, "text/json", output);
       });
