@@ -12,16 +12,17 @@
  */
 
 //#define STAROTTO
-#define PRIMO
+//#define PRIMO
 //#define UNOWIFIDEVED
+//#define UNOWIFI
 
 
 /*
  * Enable/Disable Debug
  */
 
-#define DEBUG
-#define BAUDRATE_DEBUG 115200
+//#define DEBUG
+//#define BAUDRATE_DEBUG 115200
 
 /*
  * Define board hostname
@@ -51,6 +52,13 @@
   #define ESP_CH_SPI
   #define WIFI_LED 2
   #define SSIDNAME "Arduino-Primo"
+#elif defined(UNOWIFI)
+  //Arduino PRIMO configuration parameters
+  #define BOARDMODEL "UNOWIFI"
+  #define ARDUINO_BOARD "unowifi"     //mdns
+  #define ESP_CH_SPI
+  #define WIFI_LED 2
+  #define SSIDNAME "Arduino-Uno-WiFi"
 #elif defined(UNOWIFIDEVED)
   //Arduino UNO WIFI DEV. EDITION configuration parameters
   #define BOARDMODEL "UNOWIFIDEVED"
