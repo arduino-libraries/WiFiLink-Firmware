@@ -12,7 +12,7 @@
 
 int ledState = LOW;             // used to set the LED state
 long previousMillis = 0;        // will store last time LED was updated
-long bl_interval = 200;
+long ap_interval = 50;         //blink interval in ap mode
 IPAddress default_IP(192,168,240,1);  //defaul IP Address
 String HOSTNAME = DEF_HOSTNAME;
 
@@ -63,21 +63,34 @@ void wifiLed(){
 
   unsigned long currentMillis = millis();
   int wifi_status = WiFi.status();
-  if ((WiFi.getMode() == 1 || WiFi.getMode() == 3) && wifi_status == WL_CONNECTED) {
-    if (currentMillis - previousMillis > bl_interval) {
+  if ((WiFi.getMode() == 1 || WiFi.getMode() == 3) && wifi_status == WL_CONNECTED) {    //wifi LED in STA MODE
+    if (currentMillis - previousMillis > ap_interval) {
       previousMillis = currentMillis;
-      if (ledState == LOW)
+      if (ledState == LOW){
         ledState = HIGH;
-      else
+        ap_interval = 200;    //time wifi led ON
+      }
+      else{
         ledState = LOW;
+        ap_interval = 2800;   //time wifi led OFF
+      }
       digitalWrite(WIFI_LED, ledState);
     }
   }
-  else if (WiFi.softAPgetStationNum() > 0 ) {   //LED on in AP mode
-    digitalWrite(WIFI_LED, HIGH);
+  else{ //if (WiFi.softAPgetStationNum() > 0 ) {   //wifi LED on in AP mode
+    if (currentMillis - previousMillis > ap_interval) {
+      previousMillis = currentMillis;
+      if (ledState == LOW){
+        ledState = HIGH;
+        ap_interval = 950;
+      }
+      else{
+        ledState = LOW;
+        ap_interval = 50;
+      }
+      digitalWrite(WIFI_LED, ledState);
+    }
   }
-  else //if (wifi_status !=WL_CONNECTED){
-    digitalWrite(WIFI_LED, LOW);
 
 }
 
