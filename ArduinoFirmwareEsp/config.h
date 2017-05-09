@@ -3,7 +3,7 @@
  * Firmware version and build date
  */
 
-#define BUILD_DATE  "20170405"
+#define BUILD_DATE  "20170509"
 #define FW_VERSION  "1.0.1"
 #define FW_NAME     "wifilink"
 
