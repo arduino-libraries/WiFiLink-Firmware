@@ -23,12 +23,12 @@ void setup() {
   pinMode(WIFI_LED, OUTPUT);      //initialize wifi LED
   digitalWrite(WIFI_LED, LOW);
   ArduinoOTA.begin();             //OTA ESP
+  initMDNS();
   CommunicationLogic.begin();
   SPIFFS.begin();
   initHostname();
   initWebServer();                 //UI begin
   setWiFiConfig();
-  initMDNS();
 
 }
 
