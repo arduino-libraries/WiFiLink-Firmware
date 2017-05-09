@@ -188,10 +188,13 @@ function changeWifiAp(d) {
         a.className += " pure-button-disabled";
         blockScan = 1;
         ajaxSpin("GET", c, function (h) {
-            $("#spinner").removeAttribute("hidden");
-            showNotification("Waiting for network change...");
-            window.scrollTo(0, 0);
-            window.setTimeout(getStatus, 2000)
+            if(h==1)
+                window.setTimeout(function(){
+                    $("#spinner").removeAttribute("hidden");
+                    showNotification("Waiting for network change...");
+                    window.scrollTo(0, 0);
+                    window.setTimeout(getStatus, 2000)
+                },10000);
         }, function (i, h) {
             showWarning("Error switching network: " + h);
             a.className = g;

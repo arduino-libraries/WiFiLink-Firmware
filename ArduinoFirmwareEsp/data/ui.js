@@ -340,6 +340,7 @@ function getBoardInfo() {
         $("#logo").src = b.logo;
         change_favicon(b.icon);
         if ($("#guide") != null) $("#guide").href = b.link;
+        $("#version").innerHTML = b.fw_name + " - " + b.fw_version + "<br />" + b.build_date;
     }, function () {
         console.log("Error during scan")
     });
