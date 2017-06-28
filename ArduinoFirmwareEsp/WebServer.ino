@@ -2,22 +2,20 @@
 // char macAddress[12];    //mac_address
 String newSSID_param;
 String newPASSWORD_param;
-IPAddress default_IP(192,168,240,1);
+const char* newSSID_par = "";
+const char* newPASSWORD_par = "";
+// IPAddress default_IP(192,168,240,1);  //defaul IP Address
 bool SERVER_STOP = false;       //check stop server
 
 // extern "C" void system_set_os_print(uint8 onoff);    //TODO to test without
 // extern "C" void ets_install_putc1(void* routine);
-
-int ledState = LOW;             // ledState used to set the LED
-long previousMillis = 0;        // will store last time LED was updated
-long bl_interval = 100;
-
-int tot;        //need to save the number of the networks scanned
+int tot = 0;
 String staticIP_param ;
 String netmask_param;
 String gateway_param;
 String dhcp = "on";
-String HOSTNAME = "arduino";
+bool connect_wifi = false;
+//String HOSTNAME = "arduino";
 
 
 String getContentType(String filename){
@@ -40,16 +38,10 @@ String getContentType(String filename){
 bool handleFileRead(String path){
   if(path.endsWith("/")) path += "index.html";
   String contentType = getContentType(path);
-  String pathWithGz = path + ".gz";
-  if(SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)){
-    if(SPIFFS.exists(pathWithGz))
-      path += ".gz";
-    File file = SPIFFS.open(path, "r");
-    size_t sent = server.streamFile(file, contentType);
-    file.close();
-    return true;
-  }
-  return false;
+  File file = SPIFFS.open(path, "r");
+  size_t sent = server.streamFile(file, contentType);
+  file.close();
+  return true;
 }
 
 String toStringIp(IPAddress ip) {
@@ -162,126 +154,30 @@ IPAddress stringToIP(String address) {
   return IPAddress(ip1.toInt(), ip2.toInt(), ip3.toInt(), ip4.toInt());
 }
 
-void handleWBServer(){
+void handleWebServer(){
+  if(connect_wifi){
+    ETS_SPI_INTR_DISABLE();
+    WiFi.begin(newSSID_param.c_str(),newPASSWORD_param.c_str());
+    connect_wifi = false;
+    ETS_SPI_INTR_ENABLE();
+  }
   if(CommunicationLogic.UI_alert){			//stop UI SERVER
     if(!SERVER_STOP){
       server.stop();
       SERVER_STOP = true;
     }
   }
-  else
+  else{
     server.handleClient();
-  wifiLed();
+  }
 }
 
-void wifiLed(){
-  unsigned long currentMillis = millis();
-  int wifi_status = WiFi.status();
-  if ((WiFi.getMode() == 1 || WiFi.getMode() == 3) && wifi_status == WL_CONNECTED) {
-    if (currentMillis - previousMillis > bl_interval) {
-      previousMillis = currentMillis;
-      if (ledState == LOW)
-        ledState = HIGH;
-      else
-        ledState = LOW;
-      digitalWrite(WIFI_LED, ledState);
-    }
-  }
-  else if (WiFi.softAPgetStationNum() > 0 ) {   //LED on in AP mode
-    digitalWrite(WIFI_LED, HIGH);
-  }
-  else //if (wifi_status !=WL_CONNECTED){
-    digitalWrite(WIFI_LED, LOW);
-}
-
-void initMDNS(){
-    MDNS.setInstanceName(HOSTNAME);
-    MDNS.enableArduino(80, false);
-}
-
-bool setNetworkConfig(String ssid, String password, String hostname){
-  StaticJsonBuffer<200> jsonBuffer;
-  JsonObject& json = jsonBuffer.createObject();
-
-  json["ssid"] = (ssid.length()>1 ? ssid : getNetworkConfig("ssid") );
-  json["password"] = (password.length()>1 ? password : getNetworkConfig("password") );
-  json["hostname"] = (hostname.length()>1 ? hostname : getNetworkConfig("hostname") );
-
-  File configFile = SPIFFS.open("/config.json", "w+");
-  if (!configFile) {
-    //Serial.println("Failed to open config file for writing");
-    return false;
-  }
-  json.printTo(configFile);
-  return true;
-}
-
-String getNetworkConfig(String param){
-  File configFile = SPIFFS.open("/config.json", "r");
-  if (!configFile) {
-    //Serial.println("Failed to open config file");
-    return "";
-  }
-  size_t size = configFile.size();
-  std::unique_ptr<char[]> buf(new char[size]);
-  configFile.readBytes(buf.get(), size);
-
-  StaticJsonBuffer<200> jsonBuffer;
-  JsonObject& json = jsonBuffer.parseObject(buf.get());
-
-  if (!json.success()) {
-    //Serial.println("Failed to parse config file");
-    return "";
-  }
-
-  return json[param];
-}
-
-void initWBServer(){
-  SPIFFS.begin();
-  {
-    Dir dir = SPIFFS.openDir("/");
-    while (dir.next()) {
-      String fileName = dir.fileName();
-      size_t fileSize = dir.fileSize();
-    }
-  }
-
-  pinMode(WIFI_LED, OUTPUT);
-  digitalWrite(WIFI_LED, LOW);
+void initWebServer(){
 
   tot = WiFi.scanNetworks();
-  //set default AP
-  String mac = WiFi.macAddress();
-  String apSSID = String(SSIDNAME) + "-" + String(mac[9])+String(mac[10])+String(mac[12])+String(mac[13])+String(mac[15])+String(mac[16]);
-  char softApssid[18];
-  apSSID.toCharArray(softApssid, apSSID.length()+1);
-  delay(1000);
-  WiFi.softAP(softApssid);
-  WiFi.softAPConfig(default_IP, default_IP, IPAddress(255, 255, 255, 0));   //set default ip for AP mode
-
-  //retrieve user defined hostname
-  String tmpHostname = getNetworkConfig("hostname");
-  if( tmpHostname!="" )
-    HOSTNAME = tmpHostname;
-  // else
-  //   HOSTNAME = SSIDNAME;
-
-    //Enable to start in AP+STA mode
-   WiFi.mode(WIFI_AP_STA);
-   WiFi.hostname(HOSTNAME);
-
-  if(getNetworkConfig("ssid") != ""){
-    if(getNetworkConfig("password") != ""){
-      WiFi.begin(getNetworkConfig("ssid").c_str(), getNetworkConfig("password").c_str() );
-    }else{
-      WiFi.begin(getNetworkConfig("ssid").c_str());
-    }
-  }
 
   //"wifi/info" information
   server.on("/wifi/info", []() {
-    //ETS_SPI_INTR_DISABLE();
     String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
     String staticadd = dhcp.equals("on") ? "0.0.0.0" : staticIP_param;
     int change = WiFi.getMode() == 1 ? 3 : 1;
@@ -293,15 +189,13 @@ void initWBServer(){
                                             + WiFi.RSSI() + "\",\"mac\":\"" + WiFi.macAddress() + "\",\"phy\":\"" + WiFi.getPhyMode() + "\", \"dhcp\": \"" + dhcp + "\", \"staticip\":\"" + staticadd +
                                             + "\", \"warn\": \"" + "<a href='#' class='pure-button button-primary button-larger-margin' onclick='changeWifiMode(" + change + ")'>Switch to " + toStringWifiMode(change) + " mode</a>\""
                                             + "}" ));
-      //ETS_SPI_INTR_ENABLE();
     });
 
     //"system/info" information
     server.on("/system/info", []() {
-            //ETS_SPI_INTR_DISABLE();
-            server.send(200, "text/plain", String("{\"heap\":\""+ String(ESP.getFreeHeap()/1024)+" KB\",\"id\":\"" + String(ESP.getFlashChipId()) + "\",\"size\":\"" + (ESP.getFlashChipSize() / 1024 / 1024) + " MB\",\"baud\":\"9600\"}"));
-            //ETS_SPI_INTR_ENABLE();
+      server.send(200, "text/plain", String("{\"heap\":\""+ String(ESP.getFreeHeap()/1024)+" KB\",\"id\":\"" + String(ESP.getFlashChipId()) + "\",\"size\":\"" + (ESP.getFlashChipSize() / 1024 / 1024) + " MB\",\"baud\":\"9600\"}"));
     });
+
     server.on("/heap", []() {
       server.send(200, "text/plain", String(ESP.getFreeHeap()));
     });
@@ -309,20 +203,19 @@ void initWBServer(){
     server.on("/system/update", []() {
       String newhostname = server.arg("name");
       WiFi.hostname(newhostname);
-      setNetworkConfig("", "", newhostname);
       MDNS.begin(newhostname.c_str());
-      initMDNS();
+      MDNS.setInstanceName(newhostname);
       server.send(200, "text/plain", newhostname);
+      Config.setParam("hostname", newhostname);
     });
 
     server.on("/wifi/netNumber", []() {
         tot = WiFi.scanNetworks();
         server.send(200, "text/plain", String(tot));
     });
-    
+
     server.on("/wifi/scan", []() {
       String scanResp = "";
-
       if (tot == 0) {
         server.send(200, "text/plain", "No networks found");
       }
@@ -351,26 +244,18 @@ void initWBServer(){
     });
 
     server.on("/connect", []() {
-           newSSID_param = server.arg("essid");
-           newPASSWORD_param = server.arg("passwd");
-           server.send(200, "text/plain", "1");
-           const char* newSSID = newSSID_param.c_str();
-           const char* newPASSWORD = newPASSWORD_param.c_str();
-           #if defined(ESP_CH_SPI)
-           ETS_SPI_INTR_DISABLE();
-           #endif
-           WiFi.begin(newSSID,newPASSWORD);
-           WiFi.hostname(WiFi.hostname()); //set hostname
-           #if defined(ESP_CH_SPI)
-           ETS_SPI_INTR_ENABLE();
-           #endif
-           setNetworkConfig(newSSID, newPASSWORD, "");
-       });
+      newSSID_param = server.arg("essid");
+      newPASSWORD_param = server.arg("passwd");
+      server.send(200, "text/plain", "1");
+      //WiFi.begin(newSSID_param.c_str(),newPASSWORD_param.c_str());
+      Config.setParam("ssid", newSSID_param);
+      Config.setParam("password", newPASSWORD_param);
+      connect_wifi = true;
+    });
 
-      server.on("/connstatus", []() {
+    server.on("/connstatus", []() {
         String ipadd = (WiFi.getMode() == 1 || WiFi.getMode() == 3) ? toStringIp(WiFi.localIP()) : toStringIp(WiFi.softAPIP());
         server.send(200, "text/plain", String("{\"url\":\"got IP address\", \"ip\":\""+ipadd+"\", \"modechange\":\"no\", \"ssid\":\""+WiFi.SSID()+"\", \"reason\":\"-\", \"status\":\""+ toStringWifiStatus(WiFi.status()) +"\"}"));
-
     });
 
 
@@ -388,6 +273,7 @@ void initWBServer(){
           WiFi.mode(WIFI_AP);
           break;
       }
+
     });
 
     server.on("/special", []() {
@@ -432,6 +318,11 @@ void initWBServer(){
             boardInfo["logo"] = "/img/logoUnoWiFi.png";
             boardInfo["link"] = "http://www.arduino.org/learning/getting-started/getting-started-with-arduino-uno-wifi";
         }
+         
+        boardInfo["fw_name"] = FW_NAME;
+        boardInfo["fw_version"] = FW_VERSION;
+        boardInfo["build_date"] = BUILD_DATE;
+         
         boardInfo.printTo(output);
         server.send(200, "text/json", output);
       });

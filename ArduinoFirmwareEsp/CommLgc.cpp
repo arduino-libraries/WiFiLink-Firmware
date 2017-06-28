@@ -25,8 +25,6 @@ DEALINGS IN THE SOFTWARE
 #include "CommLgc.h"
 #include "CommCmd.h"
 
-char FW_VERSION[] = "1.0.0";
-
 //cached values
 IPAddress _reqHostIp;
 
@@ -307,7 +305,7 @@ void CommLgc::scanNetwork(){
 	//scanNetworks command
 	numNets = WiFi.scanNetworks();
 	//fix the maximum network number to 10
-	uint8_t numNetsMax = 10
+	uint8_t numNetsMax = 10;
 
 	numNets = (numNets <= numNetsMax) ? numNets : numNetsMax;
 	_resPckt[resp_idx++]=numNets;

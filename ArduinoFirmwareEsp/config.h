@@ -1,11 +1,20 @@
 
 /*
+ * Firmware version and build date
+ */
+
+#define BUILD_DATE  "20170509"
+#define FW_VERSION  "1.0.1"
+#define FW_NAME     "wifilink"
+
+/*
  * Define board model name
  */
 
 //#define STAROTTO
 //#define PRIMO
 //#define UNOWIFIDEVED
+//#define UNOWIFI
 
 
 /*
@@ -15,6 +24,11 @@
 //#define DEBUG
 //#define BAUDRATE_DEBUG 115200
 
+/*
+ * Define board hostname
+ */
+
+#define DEF_HOSTNAME "arduino"
 
 /*
  * Defines the communication channel between microcontroller
@@ -38,6 +52,13 @@
   #define ESP_CH_SPI
   #define WIFI_LED 2
   #define SSIDNAME "Arduino-Primo"
+#elif defined(UNOWIFI)
+  //Arduino PRIMO configuration parameters
+  #define BOARDMODEL "UNOWIFI"
+  #define ARDUINO_BOARD "unowifi"     //mdns
+  #define ESP_CH_SPI
+  #define WIFI_LED 2
+  #define SSIDNAME "Arduino-Uno-WiFi"
 #elif defined(UNOWIFIDEVED)
   //Arduino UNO WIFI DEV. EDITION configuration parameters
   #define BOARDMODEL "UNOWIFIDEVED"
