@@ -36,9 +36,13 @@ String getContentType(String filename){
 }
 
 bool handleFileRead(String path){
+  if (path.indexOf("config.json") >= 0)
+    return false;
   if(path.endsWith("/")) path += "index.html";
   String contentType = getContentType(path);
   File file = SPIFFS.open(path, "r");
+  if (file == NULL)
+    return false;
   size_t sent = server.streamFile(file, contentType);
   file.close();
   return true;
