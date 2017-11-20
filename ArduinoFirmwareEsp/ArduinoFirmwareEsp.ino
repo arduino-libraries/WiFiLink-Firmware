@@ -15,6 +15,10 @@ long previousMillis = 0;        // will store last time LED was updated
 long ap_interval = 50;         //blink interval in ap mode
 IPAddress default_IP(192,168,240,1);  //defaul IP Address
 String HOSTNAME = DEF_HOSTNAME;
+String staticIP_param ;
+String netmask_param;
+String gateway_param;
+String dhcp = "on";
 
 ESP8266WebServer server(80);    //server UI
 
@@ -119,6 +123,14 @@ void setWiFiConfig(){
       WiFi.begin(ssid.c_str(),password.c_str());
     }else{
       WiFi.begin(Config.getParam("ssid").c_str());
+    }
+    String staticIP = Config.getParam("staticIP").c_str();
+    if(staticIP != ""){
+      dhcp = "off";
+      staticIP_param = staticIP;
+      netmask_param = Config.getParam("netMask").c_str();
+      gateway_param = Config.getParam("gatewayIP").c_str();
+      WiFi.config(stringToIP(staticIP_param), stringToIP(gateway_param), stringToIP(netmask_param));
     }
   }
 
