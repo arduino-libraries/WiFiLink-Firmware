@@ -10,10 +10,6 @@ bool SERVER_STOP = false;       //check stop server
 // extern "C" void system_set_os_print(uint8 onoff);    //TODO to test without
 // extern "C" void ets_install_putc1(void* routine);
 int tot = 0;
-String staticIP_param ;
-String netmask_param;
-String gateway_param;
-String dhcp = "on";
 bool connect_wifi = false;
 //String HOSTNAME = "arduino";
 
@@ -36,9 +32,13 @@ String getContentType(String filename){
 }
 
 bool handleFileRead(String path){
+  if (path.indexOf("config.json") >= 0)
+    return false;
   if(path.endsWith("/")) path += "index.html";
   String contentType = getContentType(path);
   File file = SPIFFS.open(path, "r");
+  if (file == NULL)
+    return false;
   size_t sent = server.streamFile(file, contentType);
   file.close();
   return true;
@@ -207,6 +207,7 @@ void initWebServer(){
       MDNS.setInstanceName(newhostname);
       server.send(200, "text/plain", newhostname);
       Config.setParam("hostname", newhostname);
+      HOSTNAME = newhostname;
     });
 
     server.on("/wifi/netNumber", []() {
@@ -285,10 +286,15 @@ void initWebServer(){
        if (dhcp == "off") {
          server.send(200, "text/plain", String("{\"url\":\"" + staticIP_param + "\"}"));
          WiFi.config(stringToIP(staticIP_param), stringToIP(gateway_param), stringToIP(netmask_param));
+         Config.setParam("staticIP", staticIP_param);
+         Config.setParam("netMask", netmask_param);
+         Config.setParam("gatewayIP", gateway_param);
        }
        else {
          server.send(200, "text/plain",  "1");
-
+         Config.setParam("staticIP", "");
+         Config.setParam("netMask", "255.255.255.0");
+         Config.setParam("gatewayIP", "192.168.1.1");
          ESP.restart();
          while ( WiFi.waitForConnectResult() != WL_CONNECTED ) {
            delay ( 5000 );
